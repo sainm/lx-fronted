@@ -337,23 +337,27 @@ const addModalConfig: IModalConfig<QuestionFormExtend> = reactive({
     console.log("表单提交开始，原始数据:", data);
     console.log("当前 props:", props);
 
+    // 优先使用表单数据中的值，其次使用props中的值
+    const versionId = data.versionId || props.versionId;
+    const scaleId = data.scaleId || props.scaleId;
+
     // 确保 versionId 和 scaleId 存在
-    if (!props.versionId) {
+    if (!versionId) {
       ElMessage.error("版本ID不能为空");
-      console.error("versionId is undefined in add, props:", props);
+      console.error("versionId is undefined, data:", data, "props:", props);
       return Promise.reject(new Error("版本ID不能为空"));
     }
-    if (!props.scaleId) {
+    if (!scaleId) {
       ElMessage.error("所属量表ID不能为空");
-      console.error("scaleId is undefined in add, props:", props);
+      console.error("scaleId is undefined, data:", data, "props:", props);
       return Promise.reject(new Error("所属量表ID不能为空"));
     }
 
     // 添加 versionId 和 scaleId，确保是数字类型
     const formData = {
       ...data,
-      versionId: Number(props.versionId),
-      scaleId: Number(props.scaleId),
+      versionId: Number(versionId),
+      scaleId: Number(scaleId),
     };
     console.log("新增提交数据:", formData);
 
@@ -379,21 +383,28 @@ const editModalConfig: IModalConfig<QuestionFormExtend> = reactive({
   },
   pk: "id",
   formAction(data: QuestionFormExtend) {
+    // 优先使用表单数据中的值，其次使用props中的值
+    const versionId = data.versionId || props.versionId;
+    const scaleId = data.scaleId || props.scaleId;
+
+    console.log("编辑提交 - data:", data, "props:", props);
+
     // 确保 versionId 和 scaleId 存在
-    if (!props.versionId) {
+    if (!versionId) {
       ElMessage.error("版本ID不能为空");
-      console.error("versionId is undefined in edit, props:", props);
+      console.error("versionId is undefined, data:", data, "props:", props);
       return Promise.reject(new Error("版本ID不能为空"));
     }
-    if (!props.scaleId) {
+    if (!scaleId) {
       ElMessage.error("所属量表ID不能为空");
-      console.error("scaleId is undefined in edit, props:", props);
+      console.error("scaleId is undefined, data:", data, "props:", props);
       return Promise.reject(new Error("所属量表ID不能为空"));
     }
+
     const formData = {
       ...data,
-      versionId: Number(props.versionId),
-      scaleId: Number(props.scaleId),
+      versionId: Number(versionId),
+      scaleId: Number(scaleId),
     };
     console.log("编辑提交数据:", formData);
     return QuestionAPI.update(String(data.id), formData as any);

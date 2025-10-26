@@ -262,34 +262,38 @@ const addModalConfig: IModalConfig<DimensionFormExtend> = reactive({
     console.log("表单提交开始，原始数据:", data);
     console.log("当前 props:", props);
 
-    // 确保 versionId 和 scaleId 存在
-    if (!props.versionId) {
-      ElMessage.error("版本ID不能为空");
-      console.error("versionId is undefined in add, props:", props);
-      return Promise.reject(new Error("版本ID不能为空"));
-    }
-    if (!props.scaleId) {
+    // 优先使用表单数据中的值，其次使用props中的值（null和undefined都要考虑）
+    const versionId = data.versionId != null ? data.versionId : props.versionId;
+    const scaleId = data.scaleId != null ? data.scaleId : props.scaleId;
+
+    // scaleId 是必需的
+    if (!scaleId) {
       ElMessage.error("所属量表ID不能为空");
-      console.error("scaleId is undefined in add, props:", props);
+      console.error("scaleId is undefined, data:", data, "props:", props);
       return Promise.reject(new Error("所属量表ID不能为空"));
     }
 
-    // 添加 versionId 和 scaleId，确保是数字类型
-    const formData = {
+    // 构建表单数据
+    const formData: any = {
       ...data,
-      versionId: Number(props.versionId),
-      scaleId: Number(props.scaleId),
+      scaleId: Number(scaleId),
     };
-    console.log("新增提交数据:", formData);
+
+    // versionId 是可选的，如果有值才设置
+    if (versionId != null) {
+      formData.versionId = Number(versionId);
+    }
+
+    console.log("新增/编辑提交数据:", formData);
 
     if (data.id) {
       // 编辑
       console.log("执行编辑操作");
-      return DimensionAPI.update(String(data.id), formData as any);
+      return DimensionAPI.update(String(data.id), formData);
     } else {
       // 新增
       console.log("执行新增操作");
-      return DimensionAPI.create(formData as any);
+      return DimensionAPI.create(formData);
     }
   },
 });
@@ -304,24 +308,32 @@ const editModalConfig: IModalConfig<DimensionFormExtend> = reactive({
   },
   pk: "id",
   formAction(data: DimensionFormExtend) {
-    // 确保 versionId 和 scaleId 存在
-    if (!props.versionId) {
-      ElMessage.error("版本ID不能为空");
-      console.error("versionId is undefined in edit, props:", props);
-      return Promise.reject(new Error("版本ID不能为空"));
-    }
-    if (!props.scaleId) {
+    console.log("编辑提交 - data:", data, "props:", props);
+
+    // 优先使用表单数据中的值，其次使用props中的值（null和undefined都要考虑）
+    const versionId = data.versionId != null ? data.versionId : props.versionId;
+    const scaleId = data.scaleId != null ? data.scaleId : props.scaleId;
+
+    // scaleId 是必需的
+    if (!scaleId) {
       ElMessage.error("所属量表ID不能为空");
-      console.error("scaleId is undefined in edit, props:", props);
+      console.error("scaleId is undefined, data:", data, "props:", props);
       return Promise.reject(new Error("所属量表ID不能为空"));
     }
-    const formData = {
+
+    // 构建表单数据
+    const formData: any = {
       ...data,
-      versionId: Number(props.versionId),
-      scaleId: Number(props.scaleId),
+      scaleId: Number(scaleId),
     };
+
+    // versionId 是可选的，如果有值才设置
+    if (versionId != null) {
+      formData.versionId = Number(versionId);
+    }
+
     console.log("编辑提交数据:", formData);
-    return DimensionAPI.update(String(data.id), formData as any);
+    return DimensionAPI.update(String(data.id), formData);
   },
   formItems: addModalConfig.formItems, // 复用新增的表单项
 });
