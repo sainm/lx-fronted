@@ -311,27 +311,52 @@ const handleReset = () => {
 
 // 开始/继续答题
 const handleStartTask = (row: MyTaskVO) => {
+  console.log("===== 开始答题 =====");
+  console.log("任务信息:", row);
+
+  // 数据验证
+  if (!row.versionId) {
+    ElMessage.error("任务数据不完整：缺少版本ID（versionId）");
+    console.error("❌ 缺少必要字段 versionId，后端API需要返回完整的任务数据");
+    console.error("当前数据:", row);
+    return;
+  }
+
+  if (!row.planName || !row.scaleName || !row.versionName) {
+    ElMessage.warning("任务数据不完整，部分信息可能无法显示");
+    console.warn("⚠️ 缺少部分显示字段:", {
+      planName: row.planName,
+      scaleName: row.scaleName,
+      versionName: row.versionName,
+    });
+  }
+
   ElMessageBox.confirm(`确定要${row.status === 0 ? "开始" : "继续"}答题吗？`, "提示", {
     confirmButtonText: "确定",
     cancelButtonText: "取消",
     type: "info",
   })
     .then(() => {
+      const params = {
+        assignmentId: row.id,
+        planId: row.planId,
+        versionId: row.versionId,
+        planName: row.planName,
+        scaleName: row.scaleName,
+        versionName: row.versionName,
+      };
+
+      console.log("跳转参数:", params);
+      console.log("跳转到: /eva/assessment");
+
       // 跳转到答题页面
       router.push({
         path: "/eva/assessment",
-        query: {
-          assignmentId: row.id,
-          planId: row.planId,
-          versionId: row.versionId,
-          planName: row.planName,
-          scaleName: row.scaleName,
-          versionName: row.versionName,
-        },
+        query: params,
       });
     })
     .catch(() => {
-      // 取消操作
+      console.log("用户取消答题");
     });
   detailDialogVisible.value = false;
 };

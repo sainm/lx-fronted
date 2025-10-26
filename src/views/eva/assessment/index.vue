@@ -241,6 +241,9 @@ const isAnswered = computed(() => currentAnswer.value.isAnswered);
 // 初始化
 const init = async () => {
   try {
+    console.log("===== 答题画面初始化 =====");
+    console.log("route.query:", route.query);
+
     // 获取路由参数
     assignmentId.value = Number(route.query.assignmentId);
     planId.value = Number(route.query.planId);
@@ -248,19 +251,33 @@ const init = async () => {
 
     assessmentInfo.planName = route.query.planName as string;
     assessmentInfo.scaleName = route.query.scaleName as string;
-    assessmentInfo.versionId = route.query.versionName as string;
+    assessmentInfo.versionName = route.query.versionName as string;
+
+    console.log("解析后的参数:");
+    console.log("- assignmentId:", assignmentId.value);
+    console.log("- planId:", planId.value);
+    console.log("- versionId:", versionId.value);
+    console.log("- planName:", assessmentInfo.planName);
+    console.log("- scaleName:", assessmentInfo.scaleName);
+    console.log("- versionName:", assessmentInfo.versionName);
 
     if (!versionId.value) {
+      console.error("❌ 缺少 versionId 参数");
       ElMessage.error("缺少必要参数");
       router.back();
       return;
     }
 
+    console.log("开始加载题目...");
     await loadQuestions();
+    console.log(`✅ 题目加载成功，共 ${questions.value.length} 道题`);
+
     await initOrLoadRecord();
     startTimer();
+
+    console.log("===== 初始化完成 =====");
   } catch (error) {
-    console.error("初始化失败:", error);
+    console.error("❌ 初始化失败:", error);
     ElMessage.error("初始化失败");
   }
 };
@@ -317,7 +334,7 @@ const handleAnswerChange = () => {
   if (question.questionType === "single" || question.questionType === "likert") {
     answer.isAnswered = !!answer.optionId;
   } else if (question.questionType === "multiple") {
-    answer.isAnswered = answer.optionIds && answer.optionIds.length > 0;
+    answer.isAnswered = !!(answer.optionIds && answer.optionIds.length > 0);
   } else {
     answer.isAnswered = !!answer.answerText && answer.answerText.trim().length > 0;
   }
