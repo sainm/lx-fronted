@@ -62,6 +62,18 @@ const AssessmentRecordAPI = {
       method: "delete",
     });
   },
+
+  /**
+   * 提交测评（完成答题）
+   *
+   * @param recordId 测评记录ID
+   */
+  submit(recordId: number) {
+    return request({
+      url: `${ASSESSMENTRECORD_BASE_URL}/${recordId}/submit`,
+      method: "post",
+    });
+  },
 };
 
 export default AssessmentRecordAPI;

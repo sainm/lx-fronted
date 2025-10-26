@@ -43,6 +43,17 @@ import DimensionAPI, { DimensionForm, DimensionPageQuery } from "@/api/psy/dimen
 import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/components/CURD/types";
 import usePage from "@/components/CURD/usePage";
 
+// 类型定义
+type DimensionFormExtend = DimensionForm & {
+  id?: number | string;
+  scaleId?: number | string;
+  versionId?: number | string;
+};
+type DimensionPageQueryExtend = DimensionPageQuery & {
+  scaleId?: number | string;
+  versionId?: number | string;
+};
+
 // 组合式 CRUD
 const {
   searchRef,
@@ -59,16 +70,42 @@ const {
   handleFilterChange,
 } = usePage();
 
+// 接收父组件传递的 versionId 和 scaleId
+const props = defineProps<{
+  versionId?: number | string;
+  scaleId?: number | string;
+}>();
+
+// 组件加载时的调试信息
+console.log("Dimension 组件加载，初始 props:", props);
+
+// 监听参数变化
+watch(
+  () => props.versionId,
+  (newVal, oldVal) => {
+    console.log("dimension versionId 变化:", oldVal, "->", newVal);
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.scaleId,
+  (newVal, oldVal) => {
+    console.log("dimension scaleId 变化:", oldVal, "->", newVal);
+  },
+  { immediate: true }
+);
+
 // 搜索配置
 const searchConfig: ISearchConfig = reactive({
-  permPrefix: "psy:dimension",
+  permPrefix: "*:*:*",
   formItems: [
     {
       type: "input",
-      label: "维度名称，如焦虑、抑郁",
+      label: "维度名称",
       prop: "name",
       attrs: {
-        placeholder: "维度名称，如焦虑、抑郁",
+        placeholder: "请输入维度名称",
         clearable: true,
         style: { width: "200px" },
       },
@@ -77,9 +114,9 @@ const searchConfig: ISearchConfig = reactive({
 });
 
 // 列表配置
-const contentConfig: IContentConfig<DimensionPageQuery> = reactive({
+const contentConfig: IContentConfig<DimensionPageQueryExtend> = reactive({
   // 权限前缀
-  permPrefix: "psy:dimension",
+  permPrefix: "*:*:*",
   table: {
     border: true,
     highlightCurrentRow: true,
@@ -87,7 +124,14 @@ const contentConfig: IContentConfig<DimensionPageQuery> = reactive({
   // 主键
   pk: "id",
   // 列表查询接口
-  indexAction: DimensionAPI.getPage,
+  indexAction: (params?: DimensionPageQueryExtend) => {
+    // 如果传入了 versionId 和 scaleId，则添加到查询参数中
+    return DimensionAPI.getPage({
+      ...params,
+      versionId: props.versionId ? Number(props.versionId) : undefined,
+      scaleId: props.scaleId ? Number(props.scaleId) : undefined,
+    } as any);
+  },
   // 删除接口
   deleteAction: DimensionAPI.deleteByIds,
   // 数据解析函数
@@ -105,30 +149,44 @@ const contentConfig: IContentConfig<DimensionPageQuery> = reactive({
     pageSizes: [10, 20, 30, 50],
   },
   // 工具栏配置
-  toolbar: ["add", "delete"],
+  toolbar: [
+    { name: "add", text: "新增", attrs: { icon: "plus", type: "success" }, perm: "*:*:*" },
+    { name: "delete", text: "删除", attrs: { icon: "delete", type: "danger" }, perm: "*:*:*" },
+  ],
   defaultToolbar: ["refresh", "filter"],
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
-    { label: "", prop: "id" },
-    { label: "所属量表ID", prop: "scaleId" },
-    { label: "维度名称，如焦虑、抑郁", prop: "name" },
-    { label: "", prop: "description" },
-    { label: "计分规则，如sum/average", prop: "scoreRule" },
+    { label: "维度名称", prop: "name" },
+    { label: "维度说明", prop: "description" },
+    { label: "计分规则", prop: "scoreRule" },
     {
       label: "操作",
       prop: "operation",
       width: 220,
       templet: "tool",
-      operat: ["edit", "delete"],
+      operat: [
+        {
+          name: "edit",
+          text: "编辑",
+          attrs: { icon: "edit", type: "primary", link: true, size: "small" },
+          perm: "*:*:*",
+        },
+        {
+          name: "delete",
+          text: "删除",
+          attrs: { icon: "delete", type: "danger", link: true, size: "small" },
+          perm: "*:*:*",
+        },
+      ],
     },
   ],
 });
 
 // 新增配置
-const addModalConfig: IModalConfig<DimensionForm> = reactive({
+const addModalConfig: IModalConfig<DimensionFormExtend> = reactive({
   // 权限前缀
-  permPrefix: "psy:dimension",
+  permPrefix: "*:*:*",
   // 主键
   pk: "id",
   // 弹窗配置
@@ -145,36 +203,49 @@ const addModalConfig: IModalConfig<DimensionForm> = reactive({
     {
       type: "input",
       attrs: {
-        placeholder: "",
+        type: "hidden",
       },
-      rules: [{ required: true, message: "不能为空", trigger: "blur" }],
       label: "",
       prop: "id",
+      show: false, // 隐藏该字段
     },
     {
       type: "input",
       attrs: {
-        placeholder: "所属量表ID",
+        type: "hidden",
       },
-      rules: [{ required: true, message: "所属量表ID不能为空", trigger: "blur" }],
-      label: "所属量表ID",
+      label: "",
+      prop: "versionId",
+      show: false, // 隐藏该字段
+      defaultValue: computed(() => (props.versionId ? Number(props.versionId) : undefined)),
+    },
+    {
+      type: "input",
+      attrs: {
+        type: "hidden",
+      },
+      label: "",
       prop: "scaleId",
+      show: false, // 隐藏该字段
+      defaultValue: computed(() => (props.scaleId ? Number(props.scaleId) : undefined)),
     },
     {
       type: "input",
       attrs: {
         placeholder: "维度名称，如焦虑、抑郁",
       },
-      rules: [{ required: true, message: "维度名称，如焦虑、抑郁不能为空", trigger: "blur" }],
-      label: "维度名称，如焦虑、抑郁",
+      rules: [{ required: true, message: "维度名称不能为空", trigger: "blur" }],
+      label: "维度名称",
       prop: "name",
     },
     {
       type: "input",
       attrs: {
-        placeholder: "",
+        type: "textarea",
+        placeholder: "请输入维度说明",
+        rows: 3,
       },
-      label: "",
+      label: "维度说明",
       prop: "description",
     },
     {
@@ -182,33 +253,75 @@ const addModalConfig: IModalConfig<DimensionForm> = reactive({
       attrs: {
         placeholder: "计分规则，如sum/average",
       },
-      label: "计分规则，如sum/average",
+      label: "计分规则",
       prop: "scoreRule",
     },
   ],
   // 提交函数
-  formAction: (data: DimensionForm) => {
+  formAction: (data: DimensionFormExtend) => {
+    console.log("表单提交开始，原始数据:", data);
+    console.log("当前 props:", props);
+
+    // 确保 versionId 和 scaleId 存在
+    if (!props.versionId) {
+      ElMessage.error("版本ID不能为空");
+      console.error("versionId is undefined in add, props:", props);
+      return Promise.reject(new Error("版本ID不能为空"));
+    }
+    if (!props.scaleId) {
+      ElMessage.error("所属量表ID不能为空");
+      console.error("scaleId is undefined in add, props:", props);
+      return Promise.reject(new Error("所属量表ID不能为空"));
+    }
+
+    // 添加 versionId 和 scaleId，确保是数字类型
+    const formData = {
+      ...data,
+      versionId: Number(props.versionId),
+      scaleId: Number(props.scaleId),
+    };
+    console.log("新增提交数据:", formData);
+
     if (data.id) {
       // 编辑
-      return DimensionAPI.update(data.id as string, data);
+      console.log("执行编辑操作");
+      return DimensionAPI.update(String(data.id), formData as any);
     } else {
       // 新增
-      return DimensionAPI.create(data);
+      console.log("执行新增操作");
+      return DimensionAPI.create(formData as any);
     }
   },
 });
 
 // 编辑配置
-const editModalConfig: IModalConfig<DimensionForm> = reactive({
-  permPrefix: "psy:dimension",
+const editModalConfig: IModalConfig<DimensionFormExtend> = reactive({
+  permPrefix: "*:*:*",
   component: "drawer",
   drawer: {
     title: "编辑",
     size: 500,
   },
   pk: "id",
-  formAction(data: any) {
-    return DimensionAPI.update(data.id as string, data);
+  formAction(data: DimensionFormExtend) {
+    // 确保 versionId 和 scaleId 存在
+    if (!props.versionId) {
+      ElMessage.error("版本ID不能为空");
+      console.error("versionId is undefined in edit, props:", props);
+      return Promise.reject(new Error("版本ID不能为空"));
+    }
+    if (!props.scaleId) {
+      ElMessage.error("所属量表ID不能为空");
+      console.error("scaleId is undefined in edit, props:", props);
+      return Promise.reject(new Error("所属量表ID不能为空"));
+    }
+    const formData = {
+      ...data,
+      versionId: Number(props.versionId),
+      scaleId: Number(props.scaleId),
+    };
+    console.log("编辑提交数据:", formData);
+    return DimensionAPI.update(String(data.id), formData as any);
   },
   formItems: addModalConfig.formItems, // 复用新增的表单项
 });
@@ -224,6 +337,6 @@ const handleOperateClick = (data: IObject) => {
 
 // 处理工具栏按钮点击（删除等）
 const handleToolbarClick = (name: string) => {
-  console.log(name);
+  console.log("工具栏按钮点击:", name);
 };
 </script>

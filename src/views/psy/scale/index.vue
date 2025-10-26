@@ -45,6 +45,18 @@
         <Dict v-model="scope.formData[scope.prop]" code="gender" v-bind="scope.attrs" />
       </template>
     </page-modal>
+
+    <!-- 查看量表版本弹窗 -->
+    <el-dialog
+      v-model="versionDialogVisible"
+      :title="`量表版本 - ${currentScaleName}`"
+      width="90%"
+      top="5vh"
+      draggable
+      destroy-on-close
+    >
+      <ScaleVersion v-if="versionDialogVisible" :scale-id="currentScaleId" />
+    </el-dialog>
   </div>
 </template>
 
@@ -54,6 +66,7 @@ defineOptions({ name: "Scale" });
 import ScaleAPI, { ScaleForm, ScalePageQuery } from "@/api/psy/scale-api";
 import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/components/CURD/types";
 import usePage from "@/components/CURD/usePage";
+import ScaleVersion from "@/views/psy/scale-version/index.vue";
 
 // 组合式 CRUD
 const {
@@ -70,6 +83,11 @@ const {
   handleSearchClick,
   handleFilterChange,
 } = usePage();
+
+// 量表版本弹窗控制
+const versionDialogVisible = ref(false);
+const currentScaleId = ref<number | string | undefined>();
+const currentScaleName = ref("");
 
 // 搜索配置
 const searchConfig: ISearchConfig = reactive({
@@ -112,7 +130,7 @@ const searchConfig: ISearchConfig = reactive({
 // 列表配置
 const contentConfig: IContentConfig<ScalePageQuery> = reactive({
   // 权限前缀
-  permPrefix: "psy:scale",
+  permPrefix: "*:*:*",
   table: {
     border: true,
     highlightCurrentRow: true,
@@ -138,7 +156,10 @@ const contentConfig: IContentConfig<ScalePageQuery> = reactive({
     pageSizes: [10, 20, 30, 50],
   },
   // 工具栏配置
-  toolbar: ["add", "delete"],
+  toolbar: [
+    { name: "add", text: "新增", attrs: { icon: "plus", type: "success" }, perm: "*:*:*" },
+    { name: "delete", text: "删除", attrs: { icon: "delete", type: "danger" }, perm: "*:*:*" },
+  ],
   defaultToolbar: ["refresh", "filter"],
   // 表格列配置
   cols: [
@@ -157,9 +178,28 @@ const contentConfig: IContentConfig<ScalePageQuery> = reactive({
     {
       label: "操作",
       prop: "operation",
-      width: 220,
+      width: 280,
       templet: "tool",
-      operat: ["edit", "delete"],
+      operat: [
+        {
+          name: "view",
+          text: "版本查看",
+          attrs: { icon: "view", type: "primary", link: true, size: "small" },
+          perm: "*:*:*", // 不需要权限检查
+        },
+        {
+          name: "edit",
+          text: "编辑",
+          attrs: { icon: "edit", type: "primary", link: true, size: "small" },
+          perm: "*:*:*",
+        },
+        {
+          name: "delete",
+          text: "删除",
+          attrs: { icon: "delete", type: "danger", link: true, size: "small" },
+          perm: "*:*:*",
+        },
+      ],
     },
   ],
 });
@@ -167,7 +207,7 @@ const contentConfig: IContentConfig<ScalePageQuery> = reactive({
 // 新增配置
 const addModalConfig: IModalConfig<ScaleForm> = reactive({
   // 权限前缀
-  permPrefix: "psy:scale",
+  permPrefix: "*:*:*",
   // 主键
   pk: "id",
   // 弹窗配置
@@ -238,7 +278,7 @@ const addModalConfig: IModalConfig<ScaleForm> = reactive({
   formAction: (data: ScaleForm) => {
     if (data.id) {
       // 编辑
-      return ScaleAPI.update(data.id as string, data);
+      return ScaleAPI.update(String(data.id), data);
     } else {
       // 新增
       return ScaleAPI.create(data);
@@ -248,7 +288,7 @@ const addModalConfig: IModalConfig<ScaleForm> = reactive({
 
 // 编辑配置
 const editModalConfig: IModalConfig<ScaleForm> = reactive({
-  permPrefix: "psy:scale",
+  permPrefix: "*:*:*",
   component: "drawer",
   drawer: {
     title: "编辑",
@@ -256,7 +296,7 @@ const editModalConfig: IModalConfig<ScaleForm> = reactive({
   },
   pk: "id",
   formAction(data: any) {
-    return ScaleAPI.update(data.id as string, data);
+    return ScaleAPI.update(String(data.id), data);
   },
   formItems: addModalConfig.formItems, // 复用新增的表单项
 });
@@ -267,6 +307,22 @@ const handleOperateClick = (data: IObject) => {
     handleEditClick(data.row, async () => {
       return await ScaleAPI.getFormData(data.row.id);
     });
+  } else if (data.name === "view") {
+    // 打开量表版本弹窗
+    console.log("点击查看按钮，完整数据:", data.row);
+    currentScaleId.value = data.row.id;
+    currentScaleName.value = data.row.name || "";
+    console.log(
+      "打开版本弹窗, scaleId:",
+      currentScaleId.value,
+      "scaleName:",
+      currentScaleName.value
+    );
+    if (!currentScaleId.value) {
+      ElMessage.error("无法获取量表ID");
+      return;
+    }
+    versionDialogVisible.value = true;
   }
 };
 

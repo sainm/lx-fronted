@@ -55,6 +55,17 @@ import QuestionAPI, { QuestionForm, QuestionPageQuery } from "@/api/psy/question
 import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/components/CURD/types";
 import usePage from "@/components/CURD/usePage";
 
+// 类型定义
+type QuestionFormExtend = QuestionForm & {
+  id?: number | string;
+  scaleId?: number | string;
+  versionId?: number | string;
+};
+type QuestionPageQueryExtend = QuestionPageQuery & {
+  scaleId?: number | string;
+  versionId?: number | string;
+};
+
 // 组合式 CRUD
 const {
   searchRef,
@@ -71,9 +82,35 @@ const {
   handleFilterChange,
 } = usePage();
 
+// 接收父组件传递的 versionId 和 scaleId
+const props = defineProps<{
+  versionId?: number | string;
+  scaleId?: number | string;
+}>();
+
+// 组件加载时的调试信息
+console.log("Question 组件加载，初始 props:", props);
+
+// 监听参数变化
+watch(
+  () => props.versionId,
+  (newVal, oldVal) => {
+    console.log("question versionId 变化:", oldVal, "->", newVal);
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.scaleId,
+  (newVal, oldVal) => {
+    console.log("question scaleId 变化:", oldVal, "->", newVal);
+  },
+  { immediate: true }
+);
+
 // 搜索配置
 const searchConfig: ISearchConfig = reactive({
-  permPrefix: "psy:question",
+  permPrefix: "*:*:*",
   formItems: [
     {
       type: "input",
@@ -87,20 +124,20 @@ const searchConfig: ISearchConfig = reactive({
     },
     {
       type: "input",
-      label: "所属量表ID",
+      label: "所属量表",
       prop: "scaleId",
       attrs: {
-        placeholder: "所属量表ID",
+        placeholder: "所属量表",
         clearable: true,
         style: { width: "200px" },
       },
     },
     {
       type: "input",
-      label: "所属维度ID",
+      label: "所属维度",
       prop: "dimensionId",
       attrs: {
-        placeholder: "所属维度ID",
+        placeholder: "所属维度",
         clearable: true,
         style: { width: "200px" },
       },
@@ -118,10 +155,10 @@ const searchConfig: ISearchConfig = reactive({
     {
       type: "custom",
       slotName: "questionType",
-      label: "题目类型: single/multiple/likert",
+      label: "题目类型",
       prop: "questionType",
       attrs: {
-        placeholder: "题目类型: single/multiple/likert",
+        placeholder: "题目类型",
         clearable: true,
         style: { width: "200px" },
       },
@@ -140,9 +177,9 @@ const searchConfig: ISearchConfig = reactive({
 });
 
 // 列表配置
-const contentConfig: IContentConfig<QuestionPageQuery> = reactive({
+const contentConfig: IContentConfig<QuestionPageQueryExtend> = reactive({
   // 权限前缀
-  permPrefix: "psy:question",
+  permPrefix: "*:*:*",
   table: {
     border: true,
     highlightCurrentRow: true,
@@ -150,7 +187,13 @@ const contentConfig: IContentConfig<QuestionPageQuery> = reactive({
   // 主键
   pk: "id",
   // 列表查询接口
-  indexAction: QuestionAPI.getPage,
+  indexAction: (params?: QuestionPageQueryExtend) => {
+    return QuestionAPI.getPage({
+      ...params,
+      versionId: props.versionId ? Number(props.versionId) : undefined,
+      scaleId: props.scaleId ? Number(props.scaleId) : undefined,
+    } as any);
+  },
   // 删除接口
   deleteAction: QuestionAPI.deleteByIds,
   // 数据解析函数
@@ -168,17 +211,18 @@ const contentConfig: IContentConfig<QuestionPageQuery> = reactive({
     pageSizes: [10, 20, 30, 50],
   },
   // 工具栏配置
-  toolbar: ["add", "delete"],
+  toolbar: [
+    { name: "add", text: "新增", attrs: { icon: "plus", type: "success" }, perm: "*:*:*" },
+    { name: "delete", text: "删除", attrs: { icon: "delete", type: "danger" }, perm: "*:*:*" },
+  ],
   defaultToolbar: ["refresh", "filter"],
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
-    { label: "", prop: "id" },
-    { label: "所属量表ID", prop: "scaleId" },
-    { label: "所属维度ID", prop: "dimensionId" },
+    { label: "所属维度", prop: "dimensionId" },
     { label: "题目内容", prop: "questionText" },
     {
-      label: "题目类型: single/multiple/likert",
+      label: "题目类型",
       prop: "questionType",
       templet: "custom",
       slotName: "questionType",
@@ -189,15 +233,28 @@ const contentConfig: IContentConfig<QuestionPageQuery> = reactive({
       prop: "operation",
       width: 220,
       templet: "tool",
-      operat: ["edit", "delete"],
+      operat: [
+        {
+          name: "edit",
+          text: "编辑",
+          attrs: { icon: "edit", type: "primary", link: true, size: "small" },
+          perm: "*:*:*",
+        },
+        {
+          name: "delete",
+          text: "删除",
+          attrs: { icon: "delete", type: "danger", link: true, size: "small" },
+          perm: "*:*:*",
+        },
+      ],
     },
   ],
 });
 
 // 新增配置
-const addModalConfig: IModalConfig<QuestionForm> = reactive({
+const addModalConfig: IModalConfig<QuestionFormExtend> = reactive({
   // 权限前缀
-  permPrefix: "psy:question",
+  permPrefix: "*:*:*",
   // 主键
   pk: "id",
   // 弹窗配置
@@ -213,19 +270,26 @@ const addModalConfig: IModalConfig<QuestionForm> = reactive({
   formItems: [
     {
       type: "input",
-      attrs: {
-        placeholder: "",
-      },
+      attrs: { type: "hidden" },
       label: "",
       prop: "id",
+      show: false,
     },
     {
       type: "input",
-      attrs: {
-        placeholder: "所属量表ID",
-      },
-      label: "所属量表ID",
+      attrs: { type: "hidden" },
+      label: "",
+      prop: "versionId",
+      show: false,
+      defaultValue: computed(() => (props.versionId ? Number(props.versionId) : undefined)),
+    },
+    {
+      type: "input",
+      attrs: { type: "hidden" },
+      label: "",
       prop: "scaleId",
+      show: false,
+      defaultValue: computed(() => (props.scaleId ? Number(props.scaleId) : undefined)),
     },
     {
       type: "input",
@@ -238,7 +302,9 @@ const addModalConfig: IModalConfig<QuestionForm> = reactive({
     {
       type: "input",
       attrs: {
+        type: "textarea",
         placeholder: "题目内容",
+        rows: 3,
       },
       rules: [{ required: true, message: "题目内容不能为空", trigger: "blur" }],
       label: "题目内容",
@@ -267,28 +333,70 @@ const addModalConfig: IModalConfig<QuestionForm> = reactive({
     },
   ],
   // 提交函数
-  formAction: (data: QuestionForm) => {
+  formAction: (data: QuestionFormExtend) => {
+    console.log("表单提交开始，原始数据:", data);
+    console.log("当前 props:", props);
+
+    // 确保 versionId 和 scaleId 存在
+    if (!props.versionId) {
+      ElMessage.error("版本ID不能为空");
+      console.error("versionId is undefined in add, props:", props);
+      return Promise.reject(new Error("版本ID不能为空"));
+    }
+    if (!props.scaleId) {
+      ElMessage.error("所属量表ID不能为空");
+      console.error("scaleId is undefined in add, props:", props);
+      return Promise.reject(new Error("所属量表ID不能为空"));
+    }
+
+    // 添加 versionId 和 scaleId，确保是数字类型
+    const formData = {
+      ...data,
+      versionId: Number(props.versionId),
+      scaleId: Number(props.scaleId),
+    };
+    console.log("新增提交数据:", formData);
+
     if (data.id) {
       // 编辑
-      return QuestionAPI.update(data.id as string, data);
+      console.log("执行编辑操作");
+      return QuestionAPI.update(String(data.id), formData as any);
     } else {
       // 新增
-      return QuestionAPI.create(data);
+      console.log("执行新增操作");
+      return QuestionAPI.create(formData as any);
     }
   },
 });
 
 // 编辑配置
-const editModalConfig: IModalConfig<QuestionForm> = reactive({
-  permPrefix: "psy:question",
+const editModalConfig: IModalConfig<QuestionFormExtend> = reactive({
+  permPrefix: "*:*:*",
   component: "drawer",
   drawer: {
     title: "编辑",
     size: 500,
   },
   pk: "id",
-  formAction(data: any) {
-    return QuestionAPI.update(data.id as string, data);
+  formAction(data: QuestionFormExtend) {
+    // 确保 versionId 和 scaleId 存在
+    if (!props.versionId) {
+      ElMessage.error("版本ID不能为空");
+      console.error("versionId is undefined in edit, props:", props);
+      return Promise.reject(new Error("版本ID不能为空"));
+    }
+    if (!props.scaleId) {
+      ElMessage.error("所属量表ID不能为空");
+      console.error("scaleId is undefined in edit, props:", props);
+      return Promise.reject(new Error("所属量表ID不能为空"));
+    }
+    const formData = {
+      ...data,
+      versionId: Number(props.versionId),
+      scaleId: Number(props.scaleId),
+    };
+    console.log("编辑提交数据:", formData);
+    return QuestionAPI.update(String(data.id), formData as any);
   },
   formItems: addModalConfig.formItems, // 复用新增的表单项
 });

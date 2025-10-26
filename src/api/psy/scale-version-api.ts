@@ -74,25 +74,16 @@ export interface ScaleVersionPageQuery extends PageQuery {
 
 /** 量版本表单对象 */
 export interface ScaleVersionForm {
-  /** 版本名称，如v1.0 */
-  versionName?: string;
-  description?: string;
-  /** 是否启用 */
-  isActive?: number;
-}
-
-/** 量版本分页对象 */
-export interface ScaleVersionPageVO {
+  /** 量版本ID */
   id?: number;
   /** 所属量表ID */
   scaleId?: number;
   /** 版本名称，如v1.0 */
   versionName?: string;
+  /** 版本说明 */
   description?: string;
   /** 是否启用 */
   isActive?: number;
-  /** 创建人ID */
-  createBy?: number;
   /** 创建时间 */
   createTime?: Date;
   /** 更新人ID */

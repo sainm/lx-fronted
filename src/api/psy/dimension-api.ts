@@ -70,6 +70,10 @@ export default DimensionAPI;
 export interface DimensionPageQuery extends PageQuery {
   /** 维度名称，如焦虑、抑郁 */
   name?: string;
+  /** 所属量表ID */
+  scaleId?: number;
+  /** 版本ID */
+  versionId?: number;
 }
 
 /** 维度表单对象 */
@@ -77,6 +81,9 @@ export interface DimensionForm {
   id?: number;
   /** 所属量表ID */
   scaleId?: number;
+
+  /** 版本ID */
+  versionId?: number;
   /** 维度名称，如焦虑、抑郁 */
   name?: string;
   description?: string;
@@ -89,6 +96,8 @@ export interface DimensionPageVO {
   id?: number;
   /** 所属量表ID */
   scaleId?: number;
+  /** 版本ID */
+  versionId?: number;
   /** 维度名称，如焦虑、抑郁 */
   name?: string;
   description?: string;

@@ -12,7 +12,7 @@
     <el-card shadow="never">
       <div class="mb-10px">
         <el-button
-          v-hasPerm="['psy:report:add']"
+          v-hasPerm="['psy:warning:add']"
           type="success"
           icon="plus"
           @click="handleOpenDialog()"
@@ -20,7 +20,7 @@
           新增
         </el-button>
         <el-button
-          v-hasPerm="['psy:report:delete']"
+          v-hasPerm="['psy:warning:delete']"
           type="danger"
           :disabled="removeIds.length === 0"
           icon="delete"
@@ -39,47 +39,61 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column key="id" label="报告ID" prop="id" min-width="150" align="center" />
+        <el-table-column key="id" label="预警ID" prop="id" min-width="150" align="center" />
+        <el-table-column key="userId" label="用户ID" prop="userId" min-width="150" align="center" />
         <el-table-column
           key="recordId"
-          label="测评记录ID"
+          label="关联测评记录ID"
           prop="recordId"
           min-width="150"
           align="center"
         />
-        <el-table-column key="userId" label="用户ID" prop="userId" min-width="150" align="center" />
         <el-table-column
-          key="scaleId"
-          label="量表ID"
-          prop="scaleId"
+          key="warningType"
+          label="预警类型（如高危、异常、极端答题）"
+          prop="warningType"
           min-width="150"
           align="center"
         />
         <el-table-column
-          key="totalScore"
-          label="总分"
-          prop="totalScore"
+          key="level"
+          label="预警等级：1一般 2严重 3紧急"
+          prop="level"
           min-width="150"
           align="center"
         />
         <el-table-column
-          key="resultLevel"
-          label="结果等级（如低、中、高风险）"
-          prop="resultLevel"
+          key="triggerRule"
+          label="触发规则标识（如规则编号）"
+          prop="triggerRule"
           min-width="150"
           align="center"
         />
         <el-table-column
-          key="resultJson"
-          label="结果详情（维度分数、解释说明等）"
-          prop="resultJson"
+          key="description"
+          label="详细说明"
+          prop="description"
           min-width="150"
           align="center"
         />
         <el-table-column
-          key="suggestion"
-          label="系统建议或干预建议"
-          prop="suggestion"
+          key="isResolved"
+          label="是否已处理：0未处理 1已处理"
+          prop="isResolved"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="handlerId"
+          label="处理人ID"
+          prop="handlerId"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="handleTime"
+          label="处理时间"
+          prop="handleTime"
           min-width="150"
           align="center"
         />
@@ -99,7 +113,7 @@
         />
         <el-table-column
           key="createTime"
-          label="生成时间"
+          label="创建时间"
           prop="createTime"
           min-width="150"
           align="center"
@@ -114,7 +128,7 @@
         <el-table-column fixed="right" label="操作" width="220">
           <template #default="scope">
             <el-button
-              v-hasPerm="['psy:report:edit']"
+              v-hasPerm="['psy:warning:edit']"
               type="primary"
               size="small"
               link
@@ -124,7 +138,7 @@
               编辑
             </el-button>
             <el-button
-              v-hasPerm="['psy:report:delete']"
+              v-hasPerm="['psy:warning:delete']"
               type="danger"
               size="small"
               link
@@ -146,7 +160,7 @@
       />
     </el-card>
 
-    <!-- 测评报告表单弹窗 -->
+    <!-- 测评预警记录表单弹窗 -->
     <el-dialog
       v-model="dialog.visible"
       :title="dialog.title"
@@ -154,36 +168,52 @@
       @close="handleCloseDialog"
     >
       <el-form ref="dataFormRef" :model="formData" :rules="rules" label-width="100px">
-        <el-form-item label="报告ID" prop="id">
-          <el-input v-model="formData.id" placeholder="报告ID" />
-        </el-form-item>
-
-        <el-form-item label="测评记录ID" prop="recordId">
-          <el-input v-model="formData.recordId" placeholder="测评记录ID" />
+        <el-form-item label="预警ID" prop="id">
+          <el-input v-model="formData.id" placeholder="预警ID" />
         </el-form-item>
 
         <el-form-item label="用户ID" prop="userId">
           <el-input v-model="formData.userId" placeholder="用户ID" />
         </el-form-item>
 
-        <el-form-item label="量表ID" prop="scaleId">
-          <el-input v-model="formData.scaleId" placeholder="量表ID" />
+        <el-form-item label="关联测评记录ID" prop="recordId">
+          <el-input v-model="formData.recordId" placeholder="关联测评记录ID" />
         </el-form-item>
 
-        <el-form-item label="总分" prop="totalScore">
-          <el-input v-model="formData.totalScore" placeholder="总分" />
+        <el-form-item label="预警类型（如高危、异常、极端答题）" prop="warningType">
+          <el-input
+            v-model="formData.warningType"
+            placeholder="预警类型（如高危、异常、极端答题）"
+          />
         </el-form-item>
 
-        <el-form-item label="结果等级（如低、中、高风险）" prop="resultLevel">
-          <el-input v-model="formData.resultLevel" placeholder="结果等级（如低、中、高风险）" />
+        <el-form-item label="预警等级：1一般 2严重 3紧急" prop="level">
+          <el-input v-model="formData.level" placeholder="预警等级：1一般 2严重 3紧急" />
         </el-form-item>
 
-        <el-form-item label="结果详情（维度分数、解释说明等）" prop="resultJson">
-          <el-input v-model="formData.resultJson" placeholder="结果详情（维度分数、解释说明等）" />
+        <el-form-item label="触发规则标识（如规则编号）" prop="triggerRule">
+          <el-input v-model="formData.triggerRule" placeholder="触发规则标识（如规则编号）" />
         </el-form-item>
 
-        <el-form-item label="系统建议或干预建议" prop="suggestion">
-          <el-input v-model="formData.suggestion" placeholder="系统建议或干预建议" />
+        <el-form-item label="详细说明" prop="description">
+          <el-input v-model="formData.description" placeholder="详细说明" />
+        </el-form-item>
+
+        <el-form-item label="是否已处理：0未处理 1已处理" prop="isResolved">
+          <el-input v-model="formData.isResolved" placeholder="是否已处理：0未处理 1已处理" />
+        </el-form-item>
+
+        <el-form-item label="处理人ID" prop="handlerId">
+          <el-input v-model="formData.handlerId" placeholder="处理人ID" />
+        </el-form-item>
+
+        <el-form-item label="处理时间" prop="handleTime">
+          <el-date-picker
+            v-model="formData.handleTime"
+            type="datetime"
+            placeholder="处理时间"
+            value-format="YYYY-MM-DD HH:mm:ss"
+          />
         </el-form-item>
 
         <el-form-item label="创建人" prop="createBy">
@@ -194,11 +224,11 @@
           <el-input v-model="formData.updateBy" placeholder="最后修改人" />
         </el-form-item>
 
-        <el-form-item label="生成时间" prop="createTime">
+        <el-form-item label="创建时间" prop="createTime">
           <el-date-picker
             v-model="formData.createTime"
             type="datetime"
-            placeholder="生成时间"
+            placeholder="创建时间"
             value-format="YYYY-MM-DD HH:mm:ss"
           />
         </el-form-item>
@@ -224,11 +254,11 @@
 
 <script setup lang="ts">
 defineOptions({
-  name: "Report",
+  name: "Warning",
   inheritAttrs: false,
 });
 
-import ReportAPI, { ReportPageVO, ReportForm, ReportPageQuery } from "@/api/psy/report-api";
+import WarningAPI, { WarningPageVO, WarningForm, WarningPageQuery } from "@/api/report/warning-api";
 
 const queryFormRef = ref();
 const dataFormRef = ref();
@@ -237,13 +267,13 @@ const loading = ref(false);
 const removeIds = ref<number[]>([]);
 const total = ref(0);
 
-const queryParams = reactive<ReportPageQuery>({
+const queryParams = reactive<WarningPageQuery>({
   pageNum: 1,
   pageSize: 10,
 });
 
-// 测评报告表格数据
-const pageData = ref<ReportPageVO[]>([]);
+// 测评预警记录表格数据
+const pageData = ref<WarningPageVO[]>([]);
 
 // 弹窗
 const dialog = reactive({
@@ -251,21 +281,16 @@ const dialog = reactive({
   visible: false,
 });
 
-// 测评报告表单数据
-const formData = reactive<ReportForm>({});
+// 测评预警记录表单数据
+const formData = reactive<WarningForm>({});
 
-// 测评报告表单校验规则
-const rules = reactive({
-  id: [{ required: true, message: "请输入报告ID", trigger: "blur" }],
-  recordId: [{ required: true, message: "请输入测评记录ID", trigger: "blur" }],
-  userId: [{ required: true, message: "请输入用户ID", trigger: "blur" }],
-  scaleId: [{ required: true, message: "请输入量表ID", trigger: "blur" }],
-});
+// 测评预警记录表单校验规则
+const rules = reactive({});
 
-/** 查询测评报告 */
+/** 查询测评预警记录 */
 function handleQuery() {
   loading.value = true;
-  ReportAPI.getPage(queryParams)
+  WarningAPI.getPage(queryParams)
     .then((data) => {
       pageData.value = data.list;
       total.value = data.total;
@@ -275,7 +300,7 @@ function handleQuery() {
     });
 }
 
-/** 重置测评报告查询 */
+/** 重置测评预警记录查询 */
 function handleResetQuery() {
   queryFormRef.value!.resetFields();
   queryParams.pageNum = 1;
@@ -287,27 +312,27 @@ function handleSelectionChange(selection: any) {
   removeIds.value = selection.map((item: any) => item.id);
 }
 
-/** 打开测评报告弹窗 */
+/** 打开测评预警记录弹窗 */
 function handleOpenDialog(id?: number) {
   dialog.visible = true;
   if (id) {
-    dialog.title = "修改测评报告";
-    ReportAPI.getFormData(id).then((data) => {
+    dialog.title = "修改测评预警记录";
+    WarningAPI.getFormData(id).then((data) => {
       Object.assign(formData, data);
     });
   } else {
-    dialog.title = "新增测评报告";
+    dialog.title = "新增测评预警记录";
   }
 }
 
-/** 提交测评报告表单 */
+/** 提交测评预警记录表单 */
 function handleSubmit() {
   dataFormRef.value.validate((valid: any) => {
     if (valid) {
       loading.value = true;
       const id = formData.id;
       if (id) {
-        ReportAPI.update(id, formData)
+        WarningAPI.update(id, formData)
           .then(() => {
             ElMessage.success("修改成功");
             handleCloseDialog();
@@ -315,7 +340,7 @@ function handleSubmit() {
           })
           .finally(() => (loading.value = false));
       } else {
-        ReportAPI.add(formData)
+        WarningAPI.add(formData)
           .then(() => {
             ElMessage.success("新增成功");
             handleCloseDialog();
@@ -327,7 +352,7 @@ function handleSubmit() {
   });
 }
 
-/** 关闭测评报告弹窗 */
+/** 关闭测评预警记录弹窗 */
 function handleCloseDialog() {
   dialog.visible = false;
   dataFormRef.value.resetFields();
@@ -335,7 +360,7 @@ function handleCloseDialog() {
   formData.id = undefined;
 }
 
-/** 删除测评报告 */
+/** 删除测评预警记录 */
 function handleDelete(id?: number) {
   const ids = [id || removeIds.value].join(",");
   if (!ids) {
@@ -350,7 +375,7 @@ function handleDelete(id?: number) {
   }).then(
     () => {
       loading.value = true;
-      ReportAPI.deleteByIds(ids)
+      WarningAPI.deleteByIds(ids)
         .then(() => {
           ElMessage.success("删除成功");
           handleResetQuery();

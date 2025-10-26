@@ -62,6 +62,44 @@ const UserAnswerAPI = {
       method: "delete",
     });
   },
+
+  /**
+   * 保存或更新答案
+   *
+   * @param data 答案数据
+   */
+  saveAnswer(data: UserAnswerForm) {
+    return request({
+      url: `${USERANSWER_BASE_URL}/save`,
+      method: "post",
+      data,
+    });
+  },
+
+  /**
+   * 批量保存答案
+   *
+   * @param data 答案数据列表
+   */
+  batchSaveAnswers(data: UserAnswerForm[]) {
+    return request({
+      url: `${USERANSWER_BASE_URL}/batch-save`,
+      method: "post",
+      data,
+    });
+  },
+
+  /**
+   * 获取测评记录的所有答案
+   *
+   * @param recordId 测评记录ID
+   */
+  getAnswersByRecord(recordId: number) {
+    return request<any, UserAnswerPageVO[]>({
+      url: `${USERANSWER_BASE_URL}/record/${recordId}`,
+      method: "get",
+    });
+  },
 };
 
 export default UserAnswerAPI;

@@ -62,6 +62,19 @@ const QuestionAPI = {
       method: "delete",
     });
   },
+
+  /**
+   * 获取量表版本的所有题目列表（用于答题）
+   *
+   * @param versionId 量表版本ID
+   * @returns 题目列表
+   */
+  getQuestionsByVersion(versionId: number) {
+    return request<any, QuestionDetailVO[]>({
+      url: `${QUESTION_BASE_URL}/version/${versionId}`,
+      method: "get",
+    });
+  },
 };
 
 export default QuestionAPI;
@@ -71,6 +84,8 @@ export interface QuestionPageQuery extends PageQuery {
   id?: number;
   /** 所属量表ID */
   scaleId?: number;
+  /** 版本ID */
+  versionId?: number;
   /** 所属维度ID */
   dimensionId?: number;
   /** 题目内容 */
@@ -86,6 +101,8 @@ export interface QuestionForm {
   id?: number;
   /** 所属量表ID */
   scaleId?: number;
+  /** 版本ID */
+  versionId?: number;
   /** 所属维度ID */
   dimensionId?: number;
   /** 题目内容 */
@@ -101,6 +118,8 @@ export interface QuestionPageVO {
   id?: number;
   /** 所属量表ID */
   scaleId?: number;
+  /** 版本ID */
+  versionId?: number;
   /** 所属维度ID */
   dimensionId?: number;
   /** 题目内容 */
@@ -108,5 +127,40 @@ export interface QuestionPageVO {
   /** 题目类型: single/multiple/likert */
   questionType?: string;
   /** 题目顺序 */
+  orderNo?: number;
+}
+
+/** 题目详情对象（包含选项） */
+export interface QuestionDetailVO {
+  id?: number;
+  /** 所属量表ID */
+  scaleId?: number;
+  /** 版本ID */
+  versionId?: number;
+  /** 所属维度ID */
+  dimensionId?: number;
+  /** 维度名称 */
+  dimensionName?: string;
+  /** 题目内容 */
+  questionText?: string;
+  /** 题目类型: single/multiple/likert */
+  questionType?: string;
+  /** 题目顺序 */
+  orderNo?: number;
+  /** 选项列表 */
+  options?: QuestionOption[];
+}
+
+/** 题目选项 */
+export interface QuestionOption {
+  /** 选项ID */
+  id?: number;
+  /** 选项标识（A/B/C/D等） */
+  optionKey?: string;
+  /** 选项文本 */
+  optionText?: string;
+  /** 选项分值 */
+  score?: number;
+  /** 排序 */
   orderNo?: number;
 }

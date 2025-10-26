@@ -37,12 +37,12 @@
 </template>
 
 <script setup lang="ts">
-defineOptions({ name: "AssessmentPlan" });
+defineOptions({ name: "AssessmentAssignment" });
 
-import AssessmentPlanAPI, {
-  AssessmentPlanForm,
-  AssessmentPlanPageQuery,
-} from "@/api/psy/assessment-plan-api";
+import AssessmentAssignmentAPI, {
+  AssessmentAssignmentForm,
+  AssessmentAssignmentPageQuery,
+} from "@/api/psym/assessment-assignment-api";
 import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/components/CURD/types";
 import usePage from "@/components/CURD/usePage";
 
@@ -64,54 +64,44 @@ const {
 
 // 搜索配置
 const searchConfig: ISearchConfig = reactive({
-  permPrefix: "psy:assessment-plan",
+  permPrefix: "psy:assessment-assignment",
   formItems: [
     {
       type: "input",
-      label: "测评计划名称",
-      prop: "name",
+      label: "用户ID（单人分配）",
+      prop: "userId",
       attrs: {
-        placeholder: "测评计划名称",
+        placeholder: "用户ID（单人分配）",
         clearable: true,
         style: { width: "200px" },
       },
     },
     {
       type: "input",
-      label: "目标群体（标签或分组描述）",
-      prop: "targetGroup",
+      label: "用户组ID（批量分配）",
+      prop: "groupId",
       attrs: {
-        placeholder: "目标群体（标签或分组描述）",
+        placeholder: "用户组ID（批量分配）",
         clearable: true,
         style: { width: "200px" },
       },
     },
     {
       type: "input",
-      label: "开始时间",
-      prop: "startTime",
+      label: "分配类型：0个人 1组",
+      prop: "assignType",
       attrs: {
-        placeholder: "开始时间",
+        placeholder: "分配类型：0个人 1组",
         clearable: true,
         style: { width: "200px" },
       },
     },
     {
       type: "input",
-      label: "结束时间",
-      prop: "endTime",
-      attrs: {
-        placeholder: "结束时间",
-        clearable: true,
-        style: { width: "200px" },
-      },
-    },
-    {
-      type: "input",
-      label: "状态：1启用 0停用",
+      label: "状态：0未开始 1进行中 2已完成 3已过期",
       prop: "status",
       attrs: {
-        placeholder: "状态：1启用 0停用",
+        placeholder: "状态：0未开始 1进行中 2已完成 3已过期",
         clearable: true,
         style: { width: "200px" },
       },
@@ -120,9 +110,9 @@ const searchConfig: ISearchConfig = reactive({
 });
 
 // 列表配置
-const contentConfig: IContentConfig<AssessmentPlanPageQuery> = reactive({
+const contentConfig: IContentConfig<AssessmentAssignmentPageQuery> = reactive({
   // 权限前缀
-  permPrefix: "psy:assessment-plan",
+  permPrefix: "psy:assessment-assignment",
   table: {
     border: true,
     highlightCurrentRow: true,
@@ -130,9 +120,9 @@ const contentConfig: IContentConfig<AssessmentPlanPageQuery> = reactive({
   // 主键
   pk: "id",
   // 列表查询接口
-  indexAction: AssessmentPlanAPI.getPage,
+  indexAction: AssessmentAssignmentAPI.getPage,
   // 删除接口
-  deleteAction: AssessmentPlanAPI.deleteByIds,
+  deleteAction: AssessmentAssignmentAPI.deleteByIds,
   // 数据解析函数
   parseData(res: any) {
     return {
@@ -153,20 +143,15 @@ const contentConfig: IContentConfig<AssessmentPlanPageQuery> = reactive({
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
-    { label: "测评计划ID", prop: "id" },
-    { label: "测评计划名称", prop: "name" },
-    { label: "测评计划说明", prop: "description" },
-    { label: "量表ID", prop: "scaleId" },
-    { label: "量表版本ID", prop: "versionId" },
-    { label: "目标群体（标签或分组描述）", prop: "targetGroup" },
-    { label: "开始时间", prop: "startTime" },
-    { label: "结束时间", prop: "endTime" },
-    { label: "创建人ID", prop: "creatorId" },
-    { label: "状态：1启用 0停用", prop: "status" },
-    { label: "创建人", prop: "createBy" },
-    { label: "最后修改人", prop: "updateBy" },
+    { label: "任务分配ID", prop: "id" },
+    { label: "测评计划ID", prop: "planId" },
+    { label: "用户ID（单人分配）", prop: "userId" },
+    { label: "用户组ID（批量分配）", prop: "groupId" },
+    { label: "分配类型：0个人 1组", prop: "assignType" },
+    { label: "答题进度百分比", prop: "progress" },
+    { label: "状态：0未开始 1进行中 2已完成 3已过期", prop: "status" },
+    { label: "分配人ID", prop: "assignedBy" },
     { label: "创建时间", prop: "createTime" },
-    { label: "更新时间", prop: "updateTime" },
     {
       label: "操作",
       prop: "operation",
@@ -178,9 +163,9 @@ const contentConfig: IContentConfig<AssessmentPlanPageQuery> = reactive({
 });
 
 // 新增配置
-const addModalConfig: IModalConfig<AssessmentPlanForm> = reactive({
+const addModalConfig: IModalConfig<AssessmentAssignmentForm> = reactive({
   // 权限前缀
-  permPrefix: "psy:assessment-plan",
+  permPrefix: "psy:assessment-assignment",
   // 主键
   pk: "id",
   // 弹窗配置
@@ -197,79 +182,50 @@ const addModalConfig: IModalConfig<AssessmentPlanForm> = reactive({
     {
       type: "input",
       attrs: {
-        placeholder: "测评计划ID",
+        placeholder: "任务分配ID",
       },
-      rules: [{ required: true, message: "测评计划ID不能为空", trigger: "blur" }],
-      label: "测评计划ID",
+      label: "任务分配ID",
       prop: "id",
     },
     {
       type: "input",
       attrs: {
-        placeholder: "测评计划名称",
+        placeholder: "测评计划ID",
       },
-      rules: [{ required: true, message: "测评计划名称不能为空", trigger: "blur" }],
-      label: "测评计划名称",
-      prop: "name",
+      label: "测评计划ID",
+      prop: "planId",
     },
     {
       type: "input",
       attrs: {
-        placeholder: "测评计划说明",
+        placeholder: "用户ID（单人分配）",
       },
-      label: "测评计划说明",
-      prop: "description",
+      label: "用户ID（单人分配）",
+      prop: "userId",
     },
     {
       type: "input",
       attrs: {
-        placeholder: "量表ID",
+        placeholder: "用户组ID（批量分配）",
       },
-      rules: [{ required: true, message: "量表ID不能为空", trigger: "blur" }],
-      label: "量表ID",
-      prop: "scaleId",
+      label: "用户组ID（批量分配）",
+      prop: "groupId",
     },
     {
       type: "input",
       attrs: {
-        placeholder: "量表版本ID",
+        placeholder: "分配类型：0个人 1组",
       },
-      label: "量表版本ID",
-      prop: "versionId",
+      label: "分配类型：0个人 1组",
+      prop: "assignType",
     },
     {
       type: "input",
       attrs: {
-        placeholder: "目标群体（标签或分组描述）",
+        placeholder: "答题进度百分比",
       },
-      label: "目标群体（标签或分组描述）",
-      prop: "targetGroup",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "开始时间",
-      },
-      rules: [{ required: true, message: "开始时间不能为空", trigger: "blur" }],
-      label: "开始时间",
-      prop: "startTime",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "结束时间",
-      },
-      label: "结束时间",
-      prop: "endTime",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "创建人ID",
-      },
-      rules: [{ required: true, message: "创建人ID不能为空", trigger: "blur" }],
-      label: "创建人ID",
-      prop: "creatorId",
+      label: "答题进度百分比",
+      prop: "progress",
     },
     {
       type: "switch",
@@ -280,8 +236,16 @@ const addModalConfig: IModalConfig<AssessmentPlanForm> = reactive({
         inactiveValue: 0,
       },
       initialValue: 1,
-      label: "状态：1启用 0停用",
+      label: "状态：0未开始 1进行中 2已完成 3已过期",
       prop: "status",
+    },
+    {
+      type: "input",
+      attrs: {
+        placeholder: "分配人ID",
+      },
+      label: "分配人ID",
+      prop: "assignedBy",
     },
     {
       type: "input",
@@ -291,46 +255,22 @@ const addModalConfig: IModalConfig<AssessmentPlanForm> = reactive({
       label: "创建人",
       prop: "createBy",
     },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "最后修改人",
-      },
-      label: "最后修改人",
-      prop: "updateBy",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "创建时间",
-      },
-      label: "创建时间",
-      prop: "createTime",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "更新时间",
-      },
-      label: "更新时间",
-      prop: "updateTime",
-    },
   ],
   // 提交函数
-  formAction: (data: AssessmentPlanForm) => {
+  formAction: (data: AssessmentAssignmentForm) => {
     if (data.id) {
       // 编辑
-      return AssessmentPlanAPI.update(data.id as string, data);
+      return AssessmentAssignmentAPI.update(data.id as string, data);
     } else {
       // 新增
-      return AssessmentPlanAPI.create(data);
+      return AssessmentAssignmentAPI.create(data);
     }
   },
 });
 
 // 编辑配置
-const editModalConfig: IModalConfig<AssessmentPlanForm> = reactive({
-  permPrefix: "psy:assessment-plan",
+const editModalConfig: IModalConfig<AssessmentAssignmentForm> = reactive({
+  permPrefix: "psy:assessment-assignment",
   component: "drawer",
   drawer: {
     title: "编辑",
@@ -338,7 +278,7 @@ const editModalConfig: IModalConfig<AssessmentPlanForm> = reactive({
   },
   pk: "id",
   formAction(data: any) {
-    return AssessmentPlanAPI.update(data.id as string, data);
+    return AssessmentAssignmentAPI.update(data.id as string, data);
   },
   formItems: addModalConfig.formItems, // 复用新增的表单项
 });
@@ -347,7 +287,7 @@ const editModalConfig: IModalConfig<AssessmentPlanForm> = reactive({
 const handleOperateClick = (data: IObject) => {
   if (data.name === "edit") {
     handleEditClick(data.row, async () => {
-      return await AssessmentPlanAPI.getFormData(data.row.id);
+      return await AssessmentAssignmentAPI.getFormData(data.row.id);
     });
   }
 };
