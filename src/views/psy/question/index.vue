@@ -52,6 +52,9 @@
 defineOptions({ name: "Question" });
 
 import QuestionAPI, { QuestionForm, QuestionPageQuery } from "@/api/psy/question-api";
+import ScaleAPI from "@/api/psy/scale-api";
+import ScaleVersionAPI from "@/api/psy/scale-version-api";
+import DimensionAPI from "@/api/psy/dimension-api";
 import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/components/CURD/types";
 import usePage from "@/components/CURD/usePage";
 
@@ -88,40 +91,98 @@ const props = defineProps<{
   scaleId?: number | string;
 }>();
 
-// 组件加载时的调试信息
-console.log("Question 组件加载，初始 props:", props);
+// 量表选项列表
+const scaleOptions = ref<{ label: string; value: any }[]>([]);
+// 版本选项列表
+const versionOptions = ref<{ label: string; value: any }[]>([]);
+// 维度选项列表
+const dimensionOptions = ref<{ label: string; value: any }[]>([]);
 
-// 监听参数变化
-watch(
-  () => props.versionId,
-  (newVal, oldVal) => {
-    console.log("question versionId 变化:", oldVal, "->", newVal);
-  },
-  { immediate: true }
-);
+// 加载量表选项
+const loadScaleOptions = async () => {
+  try {
+    const res = await ScaleAPI.getPage({ pageNum: 1, pageSize: 1000 });
+    scaleOptions.value = res.list.map((item: any) => ({
+      label: item.name,
+      value: item.id,
+    }));
+  } catch (error) {
+    console.error("加载量表选项失败:", error);
+  }
+};
 
-watch(
-  () => props.scaleId,
-  (newVal, oldVal) => {
-    console.log("question scaleId 变化:", oldVal, "->", newVal);
-  },
-  { immediate: true }
-);
+// 加载版本选项
+const loadVersionOptions = async (scaleId: number | string) => {
+  if (!scaleId) {
+    versionOptions.value = [];
+    return;
+  }
+  try {
+    const res = await ScaleVersionAPI.getPage({
+      pageNum: 1,
+      pageSize: 1000,
+      scaleId: Number(scaleId),
+    } as any);
+    versionOptions.value = res.list.map((item: any) => ({
+      label: item.versionName,
+      value: item.id,
+    }));
+  } catch (error) {
+    console.error("加载版本选项失败:", error);
+  }
+};
+
+// 加载维度选项
+const loadDimensionOptions = async (versionId: number | string, scaleId?: number | string) => {
+  if (!versionId) {
+    dimensionOptions.value = [];
+    return;
+  }
+  try {
+    const params: any = {
+      pageNum: 1,
+      pageSize: 1000,
+      versionId: Number(versionId),
+    };
+    if (scaleId) {
+      params.scaleId = Number(scaleId);
+    }
+    const res = await DimensionAPI.getPage(params as any);
+    dimensionOptions.value = res.list.map((item: any) => ({
+      label: item.name,
+      value: item.id,
+    }));
+  } catch (error) {
+    console.error("加载维度选项失败:", error);
+  }
+};
+
+// 组件挂载时加载选项
+onMounted(() => {
+  loadScaleOptions();
+  // 如果有 scaleId 和 versionId，则加载对应的选项
+  if (props.scaleId) {
+    loadVersionOptions(props.scaleId);
+  }
+  if (props.versionId) {
+    loadDimensionOptions(props.versionId, props.scaleId);
+  }
+});
 
 // 搜索配置
 const searchConfig: ISearchConfig = reactive({
   permPrefix: "*:*:*",
   formItems: [
-    {
-      type: "input",
-      label: "",
-      prop: "id",
-      attrs: {
-        placeholder: "",
-        clearable: true,
-        style: { width: "200px" },
-      },
-    },
+    // {
+    //   type: "input",
+    //   label: "",
+    //   prop: "id",
+    //   attrs: {
+    //     placeholder: "",
+    //     clearable: true,
+    //     style: { width: "200px" },
+    //   },
+    // },
     {
       type: "input",
       label: "所属量表",
@@ -219,7 +280,9 @@ const contentConfig: IContentConfig<QuestionPageQueryExtend> = reactive({
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
-    { label: "所属维度", prop: "dimensionId" },
+    { label: "所属量表", prop: "scaleName" },
+    { label: "所属版本", prop: "versionName" },
+    { label: "所属维度", prop: "dimensionName" },
     { label: "题目内容", prop: "questionText" },
     {
       label: "题目类型",
@@ -267,107 +330,139 @@ const addModalConfig: IModalConfig<QuestionFormExtend> = reactive({
     labelWidth: 100,
   },
   // 表单项配置
-  formItems: [
-    {
-      type: "input",
-      attrs: { type: "hidden" },
-      label: "",
-      prop: "id",
-      show: false,
-    },
-    {
-      type: "input",
-      attrs: { type: "hidden" },
-      label: "",
-      prop: "versionId",
-      show: false,
-      defaultValue: computed(() => (props.versionId ? Number(props.versionId) : undefined)),
-    },
-    {
-      type: "input",
-      attrs: { type: "hidden" },
-      label: "",
-      prop: "scaleId",
-      show: false,
-      defaultValue: computed(() => (props.scaleId ? Number(props.scaleId) : undefined)),
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "所属维度ID",
-      },
-      label: "所属维度ID",
+  formItems: computed(() => {
+    const items: any[] = [];
+
+    // 只有在没有传入 scaleId 时才显示所属量表选择
+    if (!props.scaleId) {
+      items.push({
+        type: "select",
+        label: "所属量表",
+        prop: "scaleId",
+        rules: [{ required: true, message: "请选择所属量表", trigger: "change" }],
+        attrs: {
+          placeholder: "请选择所属量表",
+          clearable: true,
+          style: { width: "100%" },
+          onChange: async (val: any) => {
+            if (val) {
+              await loadVersionOptions(val);
+            } else {
+              versionOptions.value = [];
+              dimensionOptions.value = [];
+            }
+          },
+        },
+        options: scaleOptions,
+      });
+    }
+
+    // 只有在没有传入 versionId 时才显示所属版本选择
+    if (!props.versionId) {
+      items.push({
+        type: "select",
+        label: "所属版本",
+        prop: "versionId",
+        rules: [{ required: true, message: "请选择所属版本", trigger: "change" }],
+        attrs: {
+          placeholder: "请选择所属版本",
+          clearable: true,
+          style: { width: "100%" },
+          onChange: async (val: any, formData: any) => {
+            if (val) {
+              const scaleId = formData?.scaleId || props.scaleId;
+              await loadDimensionOptions(val, scaleId);
+            } else {
+              dimensionOptions.value = [];
+            }
+          },
+        },
+        options: versionOptions,
+      });
+    }
+
+    // 维度选择
+    items.push({
+      type: "select",
+      label: "所属维度",
       prop: "dimensionId",
-    },
-    {
-      type: "input",
       attrs: {
-        type: "textarea",
-        placeholder: "题目内容",
-        rows: 3,
-      },
-      rules: [{ required: true, message: "题目内容不能为空", trigger: "blur" }],
-      label: "题目内容",
-      prop: "questionText",
-    },
-    {
-      type: "custom",
-      label: "题目类型: single/multiple/likert",
-      prop: "questionType",
-      slotName: "questionType",
-      attrs: {
-        placeholder: "题目类型: single/multiple/likert",
+        placeholder: "请选择所属维度（可选）",
+        clearable: true,
         style: { width: "100%" },
       },
-      rules: [
-        { required: true, message: "题目类型: single/multiple/likert不能为空", trigger: "change" },
-      ],
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "题目顺序",
+      options: dimensionOptions,
+    });
+
+    return [
+      ...items,
+      {
+        type: "input",
+        attrs: {
+          type: "textarea",
+          placeholder: "题目内容",
+          rows: 3,
+        },
+        rules: [{ required: true, message: "题目内容不能为空", trigger: "blur" }],
+        label: "题目内容",
+        prop: "questionText",
       },
-      label: "题目顺序",
-      prop: "orderNo",
-    },
-  ],
+      {
+        type: "custom",
+        label: "题目类型: single/multiple/likert",
+        prop: "questionType",
+        slotName: "questionType",
+        attrs: {
+          placeholder: "题目类型: single/multiple/likert",
+          style: { width: "100%" },
+        },
+        rules: [
+          {
+            required: true,
+            message: "题目类型: single/multiple/likert不能为空",
+            trigger: "change",
+          },
+        ],
+      },
+      {
+        type: "input",
+        attrs: {
+          placeholder: "题目顺序",
+        },
+        label: "题目顺序",
+        prop: "orderNo",
+      },
+    ];
+  }),
   // 提交函数
   formAction: (data: QuestionFormExtend) => {
-    console.log("表单提交开始，原始数据:", data);
-    console.log("当前 props:", props);
-
     // 优先使用表单数据中的值，其次使用props中的值
     const versionId = data.versionId || props.versionId;
     const scaleId = data.scaleId || props.scaleId;
 
     // 确保 versionId 和 scaleId 存在
-    if (!versionId) {
-      ElMessage.error("版本ID不能为空");
-      console.error("versionId is undefined, data:", data, "props:", props);
-      return Promise.reject(new Error("版本ID不能为空"));
-    }
     if (!scaleId) {
-      ElMessage.error("所属量表ID不能为空");
-      console.error("scaleId is undefined, data:", data, "props:", props);
+      ElMessage.error("请选择所属量表");
       return Promise.reject(new Error("所属量表ID不能为空"));
     }
+    if (!versionId) {
+      ElMessage.error("请选择所属版本");
+      return Promise.reject(new Error("版本ID不能为空"));
+    }
 
-    // 添加 versionId 和 scaleId，确保是数字类型
+    // 构建表单数据
     const formData = {
       ...data,
-      versionId: Number(versionId),
       scaleId: Number(scaleId),
+      versionId: Number(versionId),
+      dimensionId: data.dimensionId ? Number(data.dimensionId) : undefined,
     };
-    console.log("新增提交数据:", formData);
 
     if (data.id) {
       // 编辑
-      console.log("执行编辑操作");
       return QuestionAPI.update(String(data.id), formData as any);
     } else {
       // 新增
-      console.log("执行新增操作");
       return QuestionAPI.create(formData as any);
     }
   },
@@ -387,26 +482,22 @@ const editModalConfig: IModalConfig<QuestionFormExtend> = reactive({
     const versionId = data.versionId || props.versionId;
     const scaleId = data.scaleId || props.scaleId;
 
-    console.log("编辑提交 - data:", data, "props:", props);
-
     // 确保 versionId 和 scaleId 存在
-    if (!versionId) {
-      ElMessage.error("版本ID不能为空");
-      console.error("versionId is undefined, data:", data, "props:", props);
-      return Promise.reject(new Error("版本ID不能为空"));
-    }
     if (!scaleId) {
-      ElMessage.error("所属量表ID不能为空");
-      console.error("scaleId is undefined, data:", data, "props:", props);
+      ElMessage.error("请选择所属量表");
       return Promise.reject(new Error("所属量表ID不能为空"));
+    }
+    if (!versionId) {
+      ElMessage.error("请选择所属版本");
+      return Promise.reject(new Error("版本ID不能为空"));
     }
 
     const formData = {
       ...data,
       versionId: Number(versionId),
       scaleId: Number(scaleId),
+      dimensionId: data.dimensionId ? Number(data.dimensionId) : undefined,
     };
-    console.log("编辑提交数据:", formData);
     return QuestionAPI.update(String(data.id), formData as any);
   },
   formItems: addModalConfig.formItems, // 复用新增的表单项
@@ -422,7 +513,7 @@ const handleOperateClick = (data: IObject) => {
 };
 
 // 处理工具栏按钮点击（删除等）
-const handleToolbarClick = (name: string) => {
-  console.log(name);
+const handleToolbarClick = () => {
+  // 工具栏按钮点击处理
 };
 </script>

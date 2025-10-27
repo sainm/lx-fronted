@@ -40,6 +40,8 @@
 defineOptions({ name: "Dimension" });
 
 import DimensionAPI, { DimensionForm, DimensionPageQuery } from "@/api/psy/dimension-api";
+import ScaleAPI from "@/api/psy/scale-api";
+import ScaleVersionAPI from "@/api/psy/scale-version-api";
 import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/components/CURD/types";
 import usePage from "@/components/CURD/usePage";
 
@@ -76,25 +78,53 @@ const props = defineProps<{
   scaleId?: number | string;
 }>();
 
-// 组件加载时的调试信息
-console.log("Dimension 组件加载，初始 props:", props);
+// 量表选项列表
+const scaleOptions = ref<{ label: string; value: any }[]>([]);
+// 版本选项列表
+const versionOptions = ref<{ label: string; value: any }[]>([]);
 
-// 监听参数变化
-watch(
-  () => props.versionId,
-  (newVal, oldVal) => {
-    console.log("dimension versionId 变化:", oldVal, "->", newVal);
-  },
-  { immediate: true }
-);
+// 加载量表选项
+const loadScaleOptions = async () => {
+  try {
+    const res = await ScaleAPI.getPage({ pageNum: 1, pageSize: 1000 });
+    scaleOptions.value = res.list.map((item: any) => ({
+      label: item.name,
+      value: item.id,
+    }));
+  } catch (error) {
+    console.error("加载量表选项失败:", error);
+  }
+};
 
-watch(
-  () => props.scaleId,
-  (newVal, oldVal) => {
-    console.log("dimension scaleId 变化:", oldVal, "->", newVal);
-  },
-  { immediate: true }
-);
+// 加载版本选项
+const loadVersionOptions = async (scaleId: number | string) => {
+  if (!scaleId) {
+    versionOptions.value = [];
+    return;
+  }
+  try {
+    const res = await ScaleVersionAPI.getPage({
+      pageNum: 1,
+      pageSize: 1000,
+      scaleId: Number(scaleId),
+    } as any);
+    versionOptions.value = res.list.map((item: any) => ({
+      label: item.versionName,
+      value: item.id,
+    }));
+  } catch (error) {
+    console.error("加载版本选项失败:", error);
+  }
+};
+
+// 组件挂载时加载量表选项
+onMounted(() => {
+  loadScaleOptions();
+  // 如果有 scaleId，则加载版本选项
+  if (props.scaleId) {
+    loadVersionOptions(props.scaleId);
+  }
+});
 
 // 搜索配置
 const searchConfig: ISearchConfig = reactive({
@@ -157,6 +187,8 @@ const contentConfig: IContentConfig<DimensionPageQueryExtend> = reactive({
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
+    { label: "所属量表", prop: "scaleName" },
+    { label: "所属版本", prop: "versionName" },
     { label: "维度名称", prop: "name" },
     { label: "维度说明", prop: "description" },
     { label: "计分规则", prop: "scoreRule" },
@@ -199,77 +231,87 @@ const addModalConfig: IModalConfig<DimensionFormExtend> = reactive({
     labelWidth: 100,
   },
   // 表单项配置
-  formItems: [
-    {
-      type: "input",
-      attrs: {
-        type: "hidden",
+  formItems: computed(() => {
+    const items: any[] = [];
+
+    // 只有在没有传入 scaleId 时才显示所属量表选择
+    if (!props.scaleId) {
+      items.push({
+        type: "select",
+        label: "所属量表",
+        prop: "scaleId",
+        rules: [{ required: true, message: "请选择所属量表", trigger: "change" }],
+        attrs: {
+          placeholder: "请选择所属量表",
+          clearable: true,
+          style: { width: "100%" },
+          onChange: async (val: any) => {
+            if (val) {
+              await loadVersionOptions(val);
+            } else {
+              versionOptions.value = [];
+            }
+          },
+        },
+        options: scaleOptions,
+      });
+    }
+
+    // 只有在没有传入 versionId 时才显示所属版本选择
+    if (!props.versionId) {
+      items.push({
+        type: "select",
+        label: "所属版本",
+        prop: "versionId",
+        attrs: {
+          placeholder: "请选择所属版本（可选）",
+          clearable: true,
+          style: { width: "100%" },
+        },
+        options: versionOptions,
+      });
+    }
+
+    return [
+      ...items,
+      {
+        type: "input",
+        attrs: {
+          placeholder: "维度名称，如焦虑、抑郁",
+        },
+        rules: [{ required: true, message: "维度名称不能为空", trigger: "blur" }],
+        label: "维度名称",
+        prop: "name",
       },
-      label: "",
-      prop: "id",
-      show: false, // 隐藏该字段
-    },
-    {
-      type: "input",
-      attrs: {
-        type: "hidden",
+      {
+        type: "input",
+        attrs: {
+          type: "textarea",
+          placeholder: "请输入维度说明",
+          rows: 3,
+        },
+        label: "维度说明",
+        prop: "description",
       },
-      label: "",
-      prop: "versionId",
-      show: false, // 隐藏该字段
-      defaultValue: computed(() => (props.versionId ? Number(props.versionId) : undefined)),
-    },
-    {
-      type: "input",
-      attrs: {
-        type: "hidden",
+      {
+        type: "input",
+        attrs: {
+          placeholder: "计分规则，如sum/average",
+        },
+        label: "计分规则",
+        prop: "scoreRule",
       },
-      label: "",
-      prop: "scaleId",
-      show: false, // 隐藏该字段
-      defaultValue: computed(() => (props.scaleId ? Number(props.scaleId) : undefined)),
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "维度名称，如焦虑、抑郁",
-      },
-      rules: [{ required: true, message: "维度名称不能为空", trigger: "blur" }],
-      label: "维度名称",
-      prop: "name",
-    },
-    {
-      type: "input",
-      attrs: {
-        type: "textarea",
-        placeholder: "请输入维度说明",
-        rows: 3,
-      },
-      label: "维度说明",
-      prop: "description",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "计分规则，如sum/average",
-      },
-      label: "计分规则",
-      prop: "scoreRule",
-    },
-  ],
+    ];
+  }),
   // 提交函数
   formAction: (data: DimensionFormExtend) => {
-    console.log("表单提交开始，原始数据:", data);
-    console.log("当前 props:", props);
-
-    // 优先使用表单数据中的值，其次使用props中的值（null和undefined都要考虑）
-    const versionId = data.versionId != null ? data.versionId : props.versionId;
-    const scaleId = data.scaleId != null ? data.scaleId : props.scaleId;
+    // 优先使用表单数据中的值（如果有效），其次使用props中的值
+    const versionId = data.versionId || props.versionId;
+    const scaleId = data.scaleId || props.scaleId;
 
     // scaleId 是必需的
     if (!scaleId) {
       ElMessage.error("所属量表ID不能为空");
-      console.error("scaleId is undefined, data:", data, "props:", props);
       return Promise.reject(new Error("所属量表ID不能为空"));
     }
 
@@ -280,19 +322,15 @@ const addModalConfig: IModalConfig<DimensionFormExtend> = reactive({
     };
 
     // versionId 是可选的，如果有值才设置
-    if (versionId != null) {
+    if (versionId) {
       formData.versionId = Number(versionId);
     }
 
-    console.log("新增/编辑提交数据:", formData);
-
     if (data.id) {
       // 编辑
-      console.log("执行编辑操作");
       return DimensionAPI.update(String(data.id), formData);
     } else {
       // 新增
-      console.log("执行新增操作");
       return DimensionAPI.create(formData);
     }
   },
@@ -308,16 +346,13 @@ const editModalConfig: IModalConfig<DimensionFormExtend> = reactive({
   },
   pk: "id",
   formAction(data: DimensionFormExtend) {
-    console.log("编辑提交 - data:", data, "props:", props);
-
-    // 优先使用表单数据中的值，其次使用props中的值（null和undefined都要考虑）
-    const versionId = data.versionId != null ? data.versionId : props.versionId;
-    const scaleId = data.scaleId != null ? data.scaleId : props.scaleId;
+    // 优先使用表单数据中的值（如果有效），其次使用props中的值
+    const versionId = data.versionId || props.versionId;
+    const scaleId = data.scaleId || props.scaleId;
 
     // scaleId 是必需的
     if (!scaleId) {
       ElMessage.error("所属量表ID不能为空");
-      console.error("scaleId is undefined, data:", data, "props:", props);
       return Promise.reject(new Error("所属量表ID不能为空"));
     }
 
@@ -328,11 +363,10 @@ const editModalConfig: IModalConfig<DimensionFormExtend> = reactive({
     };
 
     // versionId 是可选的，如果有值才设置
-    if (versionId != null) {
+    if (versionId) {
       formData.versionId = Number(versionId);
     }
 
-    console.log("编辑提交数据:", formData);
     return DimensionAPI.update(String(data.id), formData);
   },
   formItems: addModalConfig.formItems, // 复用新增的表单项
@@ -348,7 +382,7 @@ const handleOperateClick = (data: IObject) => {
 };
 
 // 处理工具栏按钮点击（删除等）
-const handleToolbarClick = (name: string) => {
-  console.log("工具栏按钮点击:", name);
+const handleToolbarClick = () => {
+  // 工具栏按钮点击处理
 };
 </script>

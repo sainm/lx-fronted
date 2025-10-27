@@ -96,10 +96,15 @@ export interface DimensionPageVO {
   id?: number;
   /** 所属量表ID */
   scaleId?: number;
+  /** 所属量表名称 */
+  scaleName?: string;
+  /** 所属版本名称 */
+  versionName?: string;
   /** 版本ID */
   versionId?: number;
   /** 维度名称，如焦虑、抑郁 */
   name?: string;
+  /** 维度描述 */
   description?: string;
   /** 计分规则，如sum/average */
   scoreRule?: string;
