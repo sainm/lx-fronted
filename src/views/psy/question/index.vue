@@ -45,6 +45,17 @@
         <Dict v-model="scope.formData[scope.prop]" code="question_type" v-bind="scope.attrs" />
       </template>
     </page-modal>
+
+    <!-- 选项管理对话框 -->
+    <el-dialog
+      v-model="optionDialogVisible"
+      :title="`题目选项管理 - ${currentQuestion?.questionText || ''}`"
+      width="90%"
+      draggable
+      destroy-on-close
+    >
+      <OptionManage :question-id="currentQuestion?.id" />
+    </el-dialog>
   </div>
 </template>
 
@@ -57,6 +68,7 @@ import ScaleVersionAPI from "@/api/psy/scale-version-api";
 import DimensionAPI from "@/api/psy/dimension-api";
 import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/components/CURD/types";
 import usePage from "@/components/CURD/usePage";
+import OptionManage from "@/views/psy/option/index.vue";
 
 // 类型定义
 type QuestionFormExtend = QuestionForm & {
@@ -97,6 +109,10 @@ const scaleOptions = ref<{ label: string; value: any }[]>([]);
 const versionOptions = ref<{ label: string; value: any }[]>([]);
 // 维度选项列表
 const dimensionOptions = ref<{ label: string; value: any }[]>([]);
+
+// 选项管理对话框状态
+const optionDialogVisible = ref(false);
+const currentQuestion = ref<any>(null);
 
 // 加载量表选项
 const loadScaleOptions = async () => {
@@ -297,6 +313,12 @@ const contentConfig: IContentConfig<QuestionPageQueryExtend> = reactive({
       width: 220,
       templet: "tool",
       operat: [
+        {
+          name: "option",
+          text: "选项",
+          attrs: { icon: "list", type: "success", link: true, size: "small" },
+          perm: "*:*:*",
+        },
         {
           name: "edit",
           text: "编辑",
@@ -505,7 +527,11 @@ const editModalConfig: IModalConfig<QuestionFormExtend> = reactive({
 
 // 处理操作按钮点击
 const handleOperateClick = (data: IObject) => {
-  if (data.name === "edit") {
+  if (data.name === "option") {
+    // 打开选项管理对话框
+    currentQuestion.value = data.row;
+    optionDialogVisible.value = true;
+  } else if (data.name === "edit") {
     handleEditClick(data.row, async () => {
       return await QuestionAPI.getFormData(data.row.id);
     });
