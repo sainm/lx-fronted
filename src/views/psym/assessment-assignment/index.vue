@@ -43,6 +43,7 @@ import AssessmentAssignmentAPI, {
   AssessmentAssignmentForm,
   AssessmentAssignmentPageQuery,
 } from "@/api/psym/assessment-assignment-api";
+import UserAPI from "@/api/system/user-api";
 import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/components/CURD/types";
 import usePage from "@/components/CURD/usePage";
 
@@ -62,9 +63,12 @@ const {
   handleFilterChange,
 } = usePage();
 
+// 用户选项列表
+const userOptions = ref<{ label: string; value: string }[]>([]);
+
 // 搜索配置
 const searchConfig: ISearchConfig = reactive({
-  permPrefix: "psy:assessment-assignment",
+  permPrefix: "psym:assessment-assignment",
   formItems: [
     {
       type: "input",
@@ -88,10 +92,10 @@ const searchConfig: ISearchConfig = reactive({
     },
     {
       type: "input",
-      label: "状态：0未开始 1进行中 2已完成 3已过期",
+      label: "状态",
       prop: "status",
       attrs: {
-        placeholder: "状态：0未开始 1进行中 2已完成 3已过期",
+        placeholder: "",
         clearable: true,
         style: { width: "200px" },
       },
@@ -102,7 +106,7 @@ const searchConfig: ISearchConfig = reactive({
 // 列表配置
 const contentConfig: IContentConfig<AssessmentAssignmentPageQuery> = reactive({
   // 权限前缀
-  permPrefix: "psy:assessment-assignment",
+  permPrefix: "psym:assessment-assignment",
   table: {
     border: true,
     highlightCurrentRow: true,
@@ -154,13 +158,27 @@ const contentConfig: IContentConfig<AssessmentAssignmentPageQuery> = reactive({
         3: "已过期",
       },
     },
-    { label: "分配人ID", prop: "assignedBy" },
+    { label: "分配人", prop: "assignedByName", width: 120 },
     {
       label: "操作",
       prop: "operation",
-      width: 220,
+      width: 150,
+      fixed: "right",
       templet: "tool",
-      operat: ["edit", "delete"],
+      operat: [
+        {
+          name: "edit",
+          text: "编辑",
+          attrs: { icon: "edit", type: "primary", link: true, size: "small" },
+          perm: "*:*:*",
+        },
+        {
+          name: "delete",
+          text: "删除",
+          attrs: { icon: "delete", type: "danger", link: true, size: "small" },
+          perm: "*:*:*",
+        },
+      ],
     },
   ],
 });
@@ -168,7 +186,7 @@ const contentConfig: IContentConfig<AssessmentAssignmentPageQuery> = reactive({
 // 新增配置
 const addModalConfig: IModalConfig<AssessmentAssignmentForm> = reactive({
   // 权限前缀
-  permPrefix: "psy:assessment-assignment",
+  permPrefix: "psym:assessment-assignment",
   // 主键
   pk: "id",
   // 弹窗配置
@@ -199,12 +217,15 @@ const addModalConfig: IModalConfig<AssessmentAssignmentForm> = reactive({
       prop: "planId",
     },
     {
-      type: "input",
+      type: "select",
       attrs: {
-        placeholder: "用户ID（单人分配）",
+        placeholder: "请选择用户",
+        clearable: true,
+        filterable: true,
       },
-      label: "用户ID（单人分配）",
+      label: "用户",
       prop: "userId",
+      options: userOptions,
     },
     {
       type: "input",
@@ -231,16 +252,19 @@ const addModalConfig: IModalConfig<AssessmentAssignmentForm> = reactive({
       prop: "progress",
     },
     {
-      type: "switch",
+      type: "select",
       attrs: {
-        activeText: "启用",
-        inactiveText: "禁用",
-        activeValue: 1,
-        inactiveValue: 0,
+        placeholder: "请选择状态",
       },
-      initialValue: 1,
-      label: "状态：0未开始 1进行中 2已完成 3已过期",
+      initialValue: 0,
+      label: "状态",
       prop: "status",
+      options: [
+        { label: "未开始", value: 0 },
+        { label: "进行中", value: 1 },
+        { label: "已完成", value: 2 },
+        { label: "已过期", value: 3 },
+      ],
     },
     {
       type: "input",
@@ -265,7 +289,7 @@ const addModalConfig: IModalConfig<AssessmentAssignmentForm> = reactive({
 
 // 编辑配置
 const editModalConfig: IModalConfig<AssessmentAssignmentForm> = reactive({
-  permPrefix: "psy:assessment-assignment",
+  permPrefix: "psym:assessment-assignment",
   component: "drawer",
   drawer: {
     title: "编辑",
@@ -291,4 +315,22 @@ const handleOperateClick = (data: IObject) => {
 const handleToolbarClick = (name: string) => {
   console.log(name);
 };
+
+// 获取用户列表
+const fetchUserList = async () => {
+  try {
+    const res = await UserAPI.getPage({ pageNum: 1, pageSize: 1000 });
+    userOptions.value = res.list.map((item: any) => ({
+      label: `${item.nickname || item.username}${item.mobile ? " - " + item.mobile : ""}`,
+      value: item.id,
+    }));
+  } catch (error) {
+    console.error("获取用户列表失败:", error);
+  }
+};
+
+// 组件挂载时获取用户列表
+onMounted(() => {
+  fetchUserList();
+});
 </script>
