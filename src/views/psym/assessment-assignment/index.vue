@@ -133,13 +133,27 @@ const contentConfig: IContentConfig<AssessmentAssignmentPageQuery> = reactive({
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
-    { label: "任务分配ID", prop: "id" },
-    { label: "测评计划ID", prop: "planId" },
+    { type: "index", label: "序号", width: 60, align: "center" },
+    // { label: "任务分配ID", prop: "id" },
+    // { label: "测评计划ID", prop: "planId" },
+    { label: "测评计划名称", prop: "planName" },
     { label: "用户ID（单人分配）", prop: "userId" },
     { label: "用户组ID（批量分配）", prop: "groupId" },
     { label: "分配类型：0个人 1组", prop: "assignType" },
-    { label: "答题进度百分比", prop: "progress" },
-    { label: "状态：0未开始 1进行中 2已完成 3已过期", prop: "status" },
+    // { label: "答题进度百分比", prop: "progress" },
+    {
+      label: "状态",
+      prop: "status",
+      width: 100,
+      align: "center",
+      templet: "list",
+      selectList: {
+        0: "未开始",
+        1: "进行中",
+        2: "已完成",
+        3: "已过期",
+      },
+    },
     { label: "分配人ID", prop: "assignedBy" },
     {
       label: "操作",
