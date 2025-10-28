@@ -153,20 +153,17 @@ const contentConfig: IContentConfig<AssessmentPlanPageQuery> = reactive({
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
-    { label: "测评计划ID", prop: "id" },
-    { label: "测评计划名称", prop: "name" },
-    { label: "测评计划说明", prop: "description" },
-    { label: "量表ID", prop: "scaleId" },
-    { label: "量表版本ID", prop: "versionId" },
+    // { label: "测评计划ID", prop: "id" },
+    { label: "计划名称", prop: "name" },
+    { label: "计划说明", prop: "description" },
+    { label: "量表", prop: "scaleName" },
+    { label: "量表版本", prop: "versionName" },
     { label: "目标群体（标签或分组描述）", prop: "targetGroup" },
     { label: "开始时间", prop: "startTime" },
     { label: "结束时间", prop: "endTime" },
-    { label: "创建人ID", prop: "creatorId" },
-    { label: "状态：1启用 0停用", prop: "status" },
-    { label: "创建人", prop: "createBy" },
-    { label: "最后修改人", prop: "updateBy" },
-    { label: "创建时间", prop: "createTime" },
-    { label: "更新时间", prop: "updateTime" },
+    // { label: "创建人ID", prop: "creatorId" },
+    { label: "状态", prop: "status" },
+
     {
       label: "操作",
       prop: "operation",

@@ -67,7 +67,12 @@ const QuestionWeightAPI = {
 export default QuestionWeightAPI;
 
 /** 计分规则题目权重分页查询参数 */
-export interface QuestionWeightPageQuery extends PageQuery {}
+export interface QuestionWeightPageQuery extends PageQuery {
+  /** 所属计分规则ID */
+  ruleId?: number;
+  /** 题目ID */
+  questionId?: number;
+}
 
 /** 计分规则题目权重表单对象 */
 export interface QuestionWeightForm {
@@ -78,16 +83,6 @@ export interface QuestionWeightForm {
   questionId?: number;
   /** 题目权重 */
   weight?: number;
-  /** 创建人ID */
-  createBy?: number;
-  /** 创建时间 */
-  createTime?: Date;
-  /** 更新人ID */
-  updateBy?: number;
-  /** 更新时间 */
-  updateTime?: Date;
-  /** 是否删除（0: 未删除, 1: 已删除） */
-  isDeleted?: number;
 }
 
 /** 计分规则题目权重分页对象 */
@@ -99,14 +94,4 @@ export interface QuestionWeightPageVO {
   questionId?: number;
   /** 题目权重 */
   weight?: number;
-  /** 创建人ID */
-  createBy?: number;
-  /** 创建时间 */
-  createTime?: Date;
-  /** 更新人ID */
-  updateBy?: number;
-  /** 更新时间 */
-  updateTime?: Date;
-  /** 是否删除（0: 未删除, 1: 已删除） */
-  isDeleted?: number;
 }

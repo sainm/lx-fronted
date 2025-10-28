@@ -122,6 +122,10 @@ export interface AssessmentPlanPageVO {
   description?: string;
   /** 量表ID */
   scaleId?: number;
+  /** 量表名称 */
+  scaleName?: string;
+  /** 量表版本名称 */
+  versionName?: string;
   /** 量表版本ID */
   versionId?: number;
   /** 目标群体（标签或分组描述） */
