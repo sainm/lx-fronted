@@ -102,15 +102,21 @@ const contentConfig: IContentConfig<NormScoreDistributionPageQuery> = reactive({
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
-    { label: "常模分布ID", prop: "id" },
-    { label: "常模样本ID", prop: "sampleId" },
-    { label: "维度ID（如有分维度常模）", prop: "dimensionId" },
-    { label: "原始分", prop: "rawScore" },
-    { label: "百分位（0~100）", prop: "percentile" },
-    { label: "T分（均值50，标准差10）", prop: "tScore" },
-    { label: "Z分（均值0，标准差1）", prop: "zScore" },
-    { label: "九分位（1~9）", prop: "stanine" },
-    { label: "备注（如转换公式或来源）", prop: "description" },
+    { type: "index", label: "序号", width: 60, align: "center" },
+    { label: "常模分布ID", prop: "id", width: 120 },
+    { label: "常模样本ID", prop: "sampleId", width: 120 },
+    {
+      label: "维度ID（如有分维度常模）",
+      prop: "dimensionId",
+      width: 180,
+      showOverflowTooltip: true,
+    },
+    { label: "原始分", prop: "rawScore", width: 100, align: "center" },
+    { label: "百分位（0~100）", prop: "percentile", width: 130, align: "center" },
+    { label: "T分（均值50，标准差10）", prop: "tScore", width: 170, align: "center" },
+    { label: "Z分（均值0，标准差1）", prop: "zScore", width: 160, align: "center" },
+    { label: "九分位（1~9）", prop: "stanine", width: 120, align: "center" },
+    { label: "备注（如转换公式或来源）", prop: "description", showOverflowTooltip: true },
     {
       label: "操作",
       prop: "operation",
@@ -218,7 +224,7 @@ const addModalConfig: IModalConfig<NormScoreDistributionForm> = reactive({
   formAction: (data: NormScoreDistributionForm) => {
     if (data.id) {
       // 编辑
-      return NormScoreDistributionAPI.update(data.id as string, data);
+      return NormScoreDistributionAPI.update(String(data.id), data);
     } else {
       // 新增
       return NormScoreDistributionAPI.create(data);

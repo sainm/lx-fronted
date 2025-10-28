@@ -107,9 +107,14 @@ const contentConfig: IContentConfig<NormSamplePageQuery> = reactive({
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
-    { label: "常模样本ID", prop: "id" },
-    { label: "所属量表版本ID", prop: "versionId" },
-    { label: "常模名称（如：大学生样本、青少年女性样本）", prop: "sampleName" },
+    { type: "index", label: "序号", width: 60, align: "center" },
+    { label: "常模样本ID", prop: "id", width: 120 },
+    { label: "所属量表版本ID", prop: "versionId", width: 150 },
+    {
+      label: "常模名称（如：大学生样本、青少年女性样本）",
+      prop: "sampleName",
+      showOverflowTooltip: true,
+    },
     {
       label: "性别（male/female/all）",
       prop: "gender",
@@ -272,7 +277,7 @@ const addModalConfig: IModalConfig<NormSampleForm> = reactive({
   formAction: (data: NormSampleForm) => {
     if (data.id) {
       // 编辑
-      return NormSampleAPI.update(data.id as string, data);
+      return NormSampleAPI.update(String(data.id), data);
     } else {
       // 新增
       return NormSampleAPI.create(data);

@@ -8,8 +8,13 @@ const AuthAPI = {
     const formData = new FormData();
     formData.append("username", data.username);
     formData.append("password", data.password);
-    formData.append("captchaKey", data.captchaKey);
-    formData.append("captchaCode", data.captchaCode);
+    // 验证码字段为可选，只在存在时添加
+    if (data.captchaKey) {
+      formData.append("captchaKey", data.captchaKey);
+    }
+    if (data.captchaCode) {
+      formData.append("captchaCode", data.captchaCode);
+    }
     return request<any, LoginResult>({
       url: `${AUTH_BASE_URL}/login`,
       method: "post",
@@ -57,10 +62,10 @@ export interface LoginFormData {
   username: string;
   /** 密码 */
   password: string;
-  /** 验证码缓存key */
-  captchaKey: string;
-  /** 验证码 */
-  captchaCode: string;
+  /** 验证码缓存key（可选） */
+  captchaKey?: string;
+  /** 验证码（可选） */
+  captchaCode?: string;
   /** 记住我 */
   rememberMe: boolean;
 }

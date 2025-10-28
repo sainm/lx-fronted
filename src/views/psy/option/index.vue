@@ -128,6 +128,7 @@ const contentConfig: IContentConfig<OptionPageQueryExtend> = reactive({
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
+    { type: "index", label: "序号", width: 60, align: "center" },
     { label: "选项内容", prop: "optionText", showOverflowTooltip: true },
     { label: "选项分值", prop: "optionValue", width: 100 },
     { label: "自定义分数", prop: "score", width: 120 },

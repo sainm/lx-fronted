@@ -307,7 +307,7 @@ function handleSubmit() {
       loading.value = true;
       const id = formData.id;
       if (id) {
-        ReportAPI.update(id, formData)
+        ReportAPI.update(String(id), formData)
           .then(() => {
             ElMessage.success("修改成功");
             handleCloseDialog();
@@ -315,7 +315,7 @@ function handleSubmit() {
           })
           .finally(() => (loading.value = false));
       } else {
-        ReportAPI.add(formData)
+        ReportAPI.create(formData)
           .then(() => {
             ElMessage.success("新增成功");
             handleCloseDialog();

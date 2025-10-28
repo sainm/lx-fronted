@@ -296,17 +296,19 @@ const contentConfig: IContentConfig<QuestionPageQueryExtend> = reactive({
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
-    { label: "所属量表", prop: "scaleName" },
-    { label: "所属版本", prop: "versionName" },
-    { label: "所属维度", prop: "dimensionName" },
-    { label: "题目内容", prop: "questionText" },
+    { type: "index", label: "序号", width: 60, align: "center" },
+    { label: "所属量表", prop: "scaleName", width: 120, showOverflowTooltip: true },
+    { label: "所属版本", prop: "versionName", width: 100 },
+    { label: "所属维度", prop: "dimensionName", width: 120, showOverflowTooltip: true },
+    { label: "题目内容", prop: "questionText", showOverflowTooltip: true },
     {
       label: "题目类型",
       prop: "questionType",
+      width: 100,
       templet: "custom",
       slotName: "questionType",
     },
-    { label: "题目顺序", prop: "orderNo" },
+    { label: "题目顺序", prop: "orderNo", width: 100, align: "center" },
     {
       label: "操作",
       prop: "operation",

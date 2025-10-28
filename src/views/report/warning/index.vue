@@ -332,7 +332,7 @@ function handleSubmit() {
       loading.value = true;
       const id = formData.id;
       if (id) {
-        WarningAPI.update(id, formData)
+        WarningAPI.update(String(id), formData)
           .then(() => {
             ElMessage.success("修改成功");
             handleCloseDialog();
@@ -340,7 +340,7 @@ function handleSubmit() {
           })
           .finally(() => (loading.value = false));
       } else {
-        WarningAPI.add(formData)
+        WarningAPI.create(formData)
           .then(() => {
             ElMessage.success("新增成功");
             handleCloseDialog();

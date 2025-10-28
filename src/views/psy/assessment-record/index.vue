@@ -63,6 +63,7 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" align="center" />
+        <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column key="id" label="测评记录ID" prop="id" min-width="150" align="center" />
         <el-table-column
           key="assignmentId"
@@ -378,7 +379,7 @@ function handleSubmit() {
       loading.value = true;
       const id = formData.id;
       if (id) {
-        AssessmentRecordAPI.update(id, formData)
+        AssessmentRecordAPI.update(String(id), formData)
           .then(() => {
             ElMessage.success("修改成功");
             handleCloseDialog();
@@ -386,7 +387,7 @@ function handleSubmit() {
           })
           .finally(() => (loading.value = false));
       } else {
-        AssessmentRecordAPI.add(formData)
+        AssessmentRecordAPI.create(formData)
           .then(() => {
             ElMessage.success("新增成功");
             handleCloseDialog();

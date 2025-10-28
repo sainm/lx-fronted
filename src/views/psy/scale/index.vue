@@ -49,12 +49,26 @@
     <!-- 查看量表版本弹窗 -->
     <el-dialog
       v-model="versionDialogVisible"
-      :title="`量表版本 - ${currentScaleName}`"
-      width="90%"
-      top="5vh"
+      :width="isMaximized ? '100%' : '75%'"
+      :top="isMaximized ? '0' : '3vh'"
+      :fullscreen="isMaximized"
       draggable
       destroy-on-close
+      @closed="isMaximized = false"
     >
+      <template #header>
+        <div class="flex items-center justify-between w-full">
+          <span class="text-base font-medium">量表版本 - {{ currentScaleName }}</span>
+          <el-button
+            :icon="isMaximized ? 'ScaleToOriginal' : 'FullScreen'"
+            :title="isMaximized ? '恢复' : '最大化'"
+            circle
+            type="primary"
+            text
+            @click="toggleMaximize"
+          />
+        </div>
+      </template>
       <ScaleVersion v-if="versionDialogVisible" :scale-id="currentScaleId" />
     </el-dialog>
   </div>
@@ -88,6 +102,12 @@ const {
 const versionDialogVisible = ref(false);
 const currentScaleId = ref<number | string | undefined>();
 const currentScaleName = ref("");
+const isMaximized = ref(false);
+
+// 切换最大化状态
+const toggleMaximize = () => {
+  isMaximized.value = !isMaximized.value;
+};
 
 // 搜索配置
 const searchConfig: ISearchConfig = reactive({
@@ -164,14 +184,15 @@ const contentConfig: IContentConfig<ScalePageQuery> = reactive({
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
-    // { label: "", prop: "id" },
-    { label: "量表名称", prop: "name" },
-    { label: "编码", prop: "code" },
-    { label: "量表说明", prop: "description" },
-    { label: "适用年龄段", prop: "applicableAge" },
+    { type: "index", label: "序号", width: 60, align: "center" },
+    { label: "量表名称", prop: "name", showOverflowTooltip: true },
+    { label: "编码", prop: "code", width: 120 },
+    { label: "量表说明", prop: "description", showOverflowTooltip: true },
+    { label: "适用年龄段", prop: "applicableAge", width: 120 },
     {
       label: "适用性别",
       prop: "applicableGender",
+      width: 100,
       templet: "custom",
       slotName: "applicableGender",
     },

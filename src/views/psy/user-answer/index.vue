@@ -39,6 +39,7 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" align="center" />
+        <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column key="id" label="答题记录ID" prop="id" min-width="150" align="center" />
         <el-table-column
           key="recordId"
@@ -305,7 +306,7 @@ function handleSubmit() {
       loading.value = true;
       const id = formData.id;
       if (id) {
-        UserAnswerAPI.update(id, formData)
+        UserAnswerAPI.update(String(id), formData)
           .then(() => {
             ElMessage.success("修改成功");
             handleCloseDialog();
@@ -313,7 +314,7 @@ function handleSubmit() {
           })
           .finally(() => (loading.value = false));
       } else {
-        UserAnswerAPI.add(formData)
+        UserAnswerAPI.create(formData)
           .then(() => {
             ElMessage.success("新增成功");
             handleCloseDialog();

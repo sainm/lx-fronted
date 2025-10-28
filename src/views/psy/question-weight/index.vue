@@ -123,10 +123,10 @@ const contentConfig: IContentConfig<QuestionWeightPageQuery> = reactive({
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
-    { label: "", prop: "id" },
-    { label: "所属计分规则ID", prop: "ruleId" },
-    { label: "题目ID", prop: "questionId" },
-    { label: "题目权重", prop: "weight" },
+    { type: "index", label: "序号", width: 60, align: "center" },
+    { label: "所属计分规则ID", prop: "ruleId", width: 150 },
+    { label: "题目ID", prop: "questionId", width: 100 },
+    { label: "题目权重", prop: "weight", width: 120, align: "center" },
     {
       label: "操作",
       prop: "operation",
@@ -192,7 +192,7 @@ const addModalConfig: IModalConfig<QuestionWeightForm> = reactive({
   formAction: (data: QuestionWeightForm) => {
     if (data.id) {
       // 编辑
-      return QuestionWeightAPI.update(data.id as string, data);
+      return QuestionWeightAPI.update(String(data.id), data);
     } else {
       // 新增
       return QuestionWeightAPI.create(data);

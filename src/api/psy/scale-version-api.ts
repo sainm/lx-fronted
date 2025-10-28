@@ -68,6 +68,8 @@ export default ScaleVersionAPI;
 
 /** 量版本分页查询参数 */
 export interface ScaleVersionPageQuery extends PageQuery {
+  /** 所属量表ID */
+  scaleId?: number;
   /** 版本名称，如v1.0 */
   versionName?: string;
 }

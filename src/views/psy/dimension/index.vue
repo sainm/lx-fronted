@@ -187,11 +187,12 @@ const contentConfig: IContentConfig<DimensionPageQueryExtend> = reactive({
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
-    { label: "所属量表", prop: "scaleName" },
-    { label: "所属版本", prop: "versionName" },
-    { label: "维度名称", prop: "name" },
-    { label: "维度说明", prop: "description" },
-    { label: "计分规则", prop: "scoreRule" },
+    { type: "index", label: "序号", width: 60, align: "center" },
+    { label: "所属量表", prop: "scaleName", width: 150, showOverflowTooltip: true },
+    { label: "所属版本", prop: "versionName", width: 120 },
+    { label: "维度名称", prop: "name", width: 150, showOverflowTooltip: true },
+    { label: "维度说明", prop: "description", showOverflowTooltip: true },
+    { label: "计分规则", prop: "scoreRule", showOverflowTooltip: true },
     {
       label: "操作",
       prop: "operation",

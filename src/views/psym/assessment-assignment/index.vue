@@ -68,30 +68,20 @@ const searchConfig: ISearchConfig = reactive({
   formItems: [
     {
       type: "input",
+      label: "测评计划ID",
+      prop: "planId",
+      attrs: {
+        placeholder: "测评计划ID",
+        clearable: true,
+        style: { width: "200px" },
+      },
+    },
+    {
+      type: "input",
       label: "用户ID（单人分配）",
       prop: "userId",
       attrs: {
         placeholder: "用户ID（单人分配）",
-        clearable: true,
-        style: { width: "200px" },
-      },
-    },
-    {
-      type: "input",
-      label: "用户组ID（批量分配）",
-      prop: "groupId",
-      attrs: {
-        placeholder: "用户组ID（批量分配）",
-        clearable: true,
-        style: { width: "200px" },
-      },
-    },
-    {
-      type: "input",
-      label: "分配类型：0个人 1组",
-      prop: "assignType",
-      attrs: {
-        placeholder: "分配类型：0个人 1组",
         clearable: true,
         style: { width: "200px" },
       },
@@ -151,7 +141,6 @@ const contentConfig: IContentConfig<AssessmentAssignmentPageQuery> = reactive({
     { label: "答题进度百分比", prop: "progress" },
     { label: "状态：0未开始 1进行中 2已完成 3已过期", prop: "status" },
     { label: "分配人ID", prop: "assignedBy" },
-    { label: "创建时间", prop: "createTime" },
     {
       label: "操作",
       prop: "operation",
@@ -247,20 +236,12 @@ const addModalConfig: IModalConfig<AssessmentAssignmentForm> = reactive({
       label: "分配人ID",
       prop: "assignedBy",
     },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "创建人",
-      },
-      label: "创建人",
-      prop: "createBy",
-    },
   ],
   // 提交函数
   formAction: (data: AssessmentAssignmentForm) => {
     if (data.id) {
       // 编辑
-      return AssessmentAssignmentAPI.update(data.id as string, data);
+      return AssessmentAssignmentAPI.update(String(data.id), data);
     } else {
       // 新增
       return AssessmentAssignmentAPI.create(data);
@@ -278,7 +259,7 @@ const editModalConfig: IModalConfig<AssessmentAssignmentForm> = reactive({
   },
   pk: "id",
   formAction(data: any) {
-    return AssessmentAssignmentAPI.update(data.id as string, data);
+    return AssessmentAssignmentAPI.update(String(data.id), data);
   },
   formItems: addModalConfig.formItems, // 复用新增的表单项
 });

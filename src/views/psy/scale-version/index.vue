@@ -37,12 +37,26 @@
     <!-- 查看维度弹窗 -->
     <el-dialog
       v-model="dimensionDialogVisible"
-      :title="`版本维度 - ${currentVersionName}`"
-      width="90%"
-      top="5vh"
+      :width="isDimensionMaximized ? '100%' : '75%'"
+      :top="isDimensionMaximized ? '0' : '3vh'"
+      :fullscreen="isDimensionMaximized"
       draggable
       destroy-on-close
+      @closed="isDimensionMaximized = false"
     >
+      <template #header>
+        <div class="flex items-center justify-between w-full">
+          <span class="text-base font-medium">版本维度 - {{ currentVersionName }}</span>
+          <el-button
+            :icon="isDimensionMaximized ? 'ScaleToOriginal' : 'FullScreen'"
+            :title="isDimensionMaximized ? '恢复' : '最大化'"
+            circle
+            type="primary"
+            text
+            @click="toggleDimensionMaximize"
+          />
+        </div>
+      </template>
       <Dimension
         v-if="dimensionDialogVisible"
         :version-id="currentVersionId"
@@ -50,19 +64,33 @@
       />
     </el-dialog>
 
-    <!-- 查看题目弹窗 -->
+    <!-- 计分规则弹窗 -->
     <el-dialog
-      v-model="questionDialogVisible"
-      :title="`版本题目 - ${questionVersionName}`"
-      width="90%"
-      top="5vh"
+      v-model="scoringRuleDialogVisible"
+      :width="isScoringMaximized ? '100%' : '75%'"
+      :top="isScoringMaximized ? '0' : '3vh'"
+      :fullscreen="isScoringMaximized"
       draggable
       destroy-on-close
+      @closed="isScoringMaximized = false"
     >
-      <Question
-        v-if="questionDialogVisible"
-        :version-id="questionVersionId"
-        :scale-id="questionScaleId"
+      <template #header>
+        <div class="flex items-center justify-between w-full">
+          <span class="text-base font-medium">计分规则 - {{ scoringRuleVersionName }}</span>
+          <el-button
+            :icon="isScoringMaximized ? 'ScaleToOriginal' : 'FullScreen'"
+            :title="isScoringMaximized ? '恢复' : '最大化'"
+            circle
+            type="primary"
+            text
+            @click="toggleScoringMaximize"
+          />
+        </div>
+      </template>
+      <ScoringRule
+        v-if="scoringRuleDialogVisible"
+        :version-id="scoringRuleVersionId"
+        :scale-id="scoringRuleScaleId"
       />
     </el-dialog>
   </div>
@@ -79,7 +107,7 @@ import ScaleAPI from "@/api/psy/scale-api";
 import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/components/CURD/types";
 import usePage from "@/components/CURD/usePage";
 import Dimension from "@/views/psy/dimension/index.vue";
-import Question from "@/views/psy/question/index.vue";
+import ScoringRule from "@/views/psy/scoring-rule/index.vue";
 
 // 类型定义
 type ScaleVersionFormExtend = ScaleVersionForm & {
@@ -154,12 +182,24 @@ const dimensionDialogVisible = ref(false);
 const currentVersionId = ref<number | string | undefined>();
 const currentScaleId = ref<number | string | undefined>();
 const currentVersionName = ref("");
+const isDimensionMaximized = ref(false);
 
-// 题目弹窗控制
-const questionDialogVisible = ref(false);
-const questionVersionId = ref<number | string | undefined>();
-const questionScaleId = ref<number | string | undefined>();
-const questionVersionName = ref("");
+// 切换维度弹窗最大化状态
+const toggleDimensionMaximize = () => {
+  isDimensionMaximized.value = !isDimensionMaximized.value;
+};
+
+// 计分规则弹窗控制
+const scoringRuleDialogVisible = ref(false);
+const scoringRuleVersionId = ref<number | string | undefined>();
+const scoringRuleScaleId = ref<number | string | undefined>();
+const scoringRuleVersionName = ref("");
+const isScoringMaximized = ref(false);
+
+// 切换计分规则弹窗最大化状态
+const toggleScoringMaximize = () => {
+  isScoringMaximized.value = !isScoringMaximized.value;
+};
 
 // 列表配置
 const contentConfig: IContentConfig<ScaleVersionPageQueryExtend> = reactive({
@@ -208,36 +248,39 @@ const contentConfig: IContentConfig<ScaleVersionPageQueryExtend> = reactive({
   // 表格列配置
   cols: [
     { type: "selection", width: 55, align: "center" },
-    { label: "所属量表名称", prop: "scaleName" },
-    { label: "版本名称", prop: "versionName" },
-    { label: "版本说明", prop: "description" },
+    { type: "index", label: "序号", width: 60, align: "center" },
+    { label: "所属量表名称", prop: "scaleName", width: 150, showOverflowTooltip: true },
+    { label: "版本名称", prop: "versionName", width: 120 },
+    { label: "版本说明", prop: "description", showOverflowTooltip: true },
     {
       label: "是否启用",
       prop: "isActive",
+      width: 100,
+      align: "center",
       templet: "list",
       selectList: {
         0: "禁用",
         1: "启用",
       },
     },
-    { label: "创建时间", prop: "createTime", templet: "date" },
-    { label: "更新时间", prop: "updateTime", templet: "date" },
+    { label: "创建时间", prop: "createTime", width: 160, templet: "date" },
+    { label: "更新时间", prop: "updateTime", width: 160, templet: "date" },
     {
       label: "操作",
       prop: "operation",
-      width: 380,
+      width: 340,
       templet: "tool",
       operat: [
-        {
-          name: "question",
-          text: "题目",
-          attrs: { icon: "document", type: "primary", link: true, size: "small" },
-          perm: "*:*:*",
-        },
         {
           name: "dimension",
           text: "维度查看",
           attrs: { icon: "menu", type: "primary", link: true, size: "small" },
+          perm: "*:*:*",
+        },
+        {
+          name: "scoringRule",
+          text: "计分规则",
+          attrs: { icon: "data-analysis", type: "success", link: true, size: "small" },
           perm: "*:*:*",
         },
         {
@@ -402,20 +445,20 @@ const handleOperateClick = (data: IObject) => {
       return;
     }
     dimensionDialogVisible.value = true;
-  } else if (data.name === "question") {
-    // 打开题目弹窗
-    questionVersionId.value = data.row.id;
-    questionScaleId.value = data.row.scaleId;
-    questionVersionName.value = data.row.versionName || "";
-    if (!questionVersionId.value) {
+  } else if (data.name === "scoringRule") {
+    // 打开计分规则弹窗
+    scoringRuleVersionId.value = data.row.id;
+    scoringRuleScaleId.value = data.row.scaleId;
+    scoringRuleVersionName.value = data.row.versionName || "";
+    if (!scoringRuleVersionId.value) {
       ElMessage.error("无法获取版本ID");
       return;
     }
-    if (!questionScaleId.value) {
+    if (!scoringRuleScaleId.value) {
       ElMessage.error("无法获取量表ID");
       return;
     }
-    questionDialogVisible.value = true;
+    scoringRuleDialogVisible.value = true;
   }
 };
 

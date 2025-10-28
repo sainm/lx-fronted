@@ -39,6 +39,7 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" align="center" />
+        <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column key="id" label="" prop="id" min-width="150" align="center" />
         <el-table-column
           key="ruleId"
@@ -213,7 +214,7 @@ const dialog = reactive({
 });
 
 // 分数区间对应等级描述表单数据
-const formData = reactive<ScoreLevelForm>({});
+const formData = reactive<ScoreLevelForm & { id?: number }>({});
 
 // 分数区间对应等级描述表单校验规则
 const rules = reactive({
@@ -267,7 +268,7 @@ function handleSubmit() {
       loading.value = true;
       const id = formData.id;
       if (id) {
-        ScoreLevelAPI.update(id, formData)
+        ScoreLevelAPI.update(String(id), formData)
           .then(() => {
             ElMessage.success("修改成功");
             handleCloseDialog();
@@ -275,7 +276,7 @@ function handleSubmit() {
           })
           .finally(() => (loading.value = false));
       } else {
-        ScoreLevelAPI.add(formData)
+        ScoreLevelAPI.create(formData)
           .then(() => {
             ElMessage.success("新增成功");
             handleCloseDialog();
