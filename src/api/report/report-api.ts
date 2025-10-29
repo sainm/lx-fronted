@@ -62,6 +62,19 @@ const ReportAPI = {
       method: "delete",
     });
   },
+
+  /**
+   * 根据测评记录ID获取报告
+   *
+   * @param recordId 测评记录ID
+   * @returns 测评报告详情
+   */
+  getByRecordId(recordId: number) {
+    return request<any, ReportDetailVO>({
+      url: `${REPORT_BASE_URL}/record/${recordId}`,
+      method: "get",
+    });
+  },
 };
 
 export default ReportAPI;
@@ -123,4 +136,54 @@ export interface ReportPageVO {
   createTime?: Date;
   /** 更新时间 */
   updateTime?: Date;
+}
+
+/** 维度得分 */
+export interface DimensionScore {
+  /** 维度名称 */
+  dimensionName: string;
+  /** 维度得分 */
+  score: number;
+  /** 满分 */
+  maxScore: number;
+  /** 得分率(%) */
+  scoreRate: number;
+  /** 等级 */
+  level: string;
+  /** 说明 */
+  description: string;
+}
+
+/** 测评报告详情对象 */
+export interface ReportDetailVO {
+  /** 报告ID */
+  id?: number;
+  /** 测评记录ID */
+  recordId?: number;
+  /** 用户ID */
+  userId?: number;
+  /** 用户姓名 */
+  userName?: string;
+  /** 量表ID */
+  scaleId?: number;
+  /** 量表名称 */
+  scaleName?: string;
+  /** 版本名称 */
+  versionName?: string;
+  /** 总分 */
+  totalScore?: number;
+  /** 总题数 */
+  totalQuestions?: number;
+  /** 完成率(%) */
+  completionRate?: number;
+  /** 答题时长(秒) */
+  durationSecond?: number;
+  /** 结果等级（如低、中、高风险） */
+  resultLevel?: string;
+  /** 维度得分列表 */
+  dimensionScores?: DimensionScore[];
+  /** 系统建议或干预建议 */
+  suggestion?: string;
+  /** 生成时间 */
+  createTime?: Date;
 }

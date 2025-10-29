@@ -74,6 +74,19 @@ const AssessmentRecordAPI = {
       method: "post",
     });
   },
+
+  /**
+   * 获取或创建测评记录
+   * 如果任务分配已有测评记录则返回，否则创建新记录
+   *
+   * @param assignmentId 任务分配ID
+   */
+  getOrCreate(assignmentId: number) {
+    return request<any, AssessmentRecordPageVO>({
+      url: `${ASSESSMENTRECORD_BASE_URL}/get-or-create/${assignmentId}`,
+      method: "post",
+    });
+  },
 };
 
 export default AssessmentRecordAPI;

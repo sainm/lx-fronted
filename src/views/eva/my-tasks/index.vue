@@ -232,21 +232,160 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 答题弹窗 -->
+    <el-dialog
+      v-model="assessmentDialogVisible"
+      title="答题"
+      width="1200px"
+      top="5vh"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      :show-close="true"
+      :before-close="handleBeforeCloseAssessment"
+      destroy-on-close
+      class="assessment-dialog"
+    >
+      <Assessment
+        v-if="assessmentDialogVisible && assessmentParams.versionId"
+        :assignment-id="assessmentParams.assignmentId"
+        :plan-id="assessmentParams.planId"
+        :version-id="assessmentParams.versionId"
+        :plan-name="assessmentParams.planName"
+        :scale-name="assessmentParams.scaleName"
+        :version-name="assessmentParams.versionName"
+        @close="handleAssessmentClose"
+        @success="handleAssessmentSuccess"
+      />
+    </el-dialog>
+
+    <!-- 报告弹窗 -->
+    <el-dialog
+      v-model="reportDialogVisible"
+      title="测评报告"
+      width="900px"
+      top="5vh"
+      destroy-on-close
+      class="report-dialog"
+    >
+      <div v-if="reportLoading" class="report-loading">
+        <el-icon class="is-loading loading-icon"><Loading /></el-icon>
+        <p>正在加载报告...</p>
+      </div>
+
+      <div v-else-if="reportData" class="report-content">
+        <!-- 报告头部 -->
+        <div class="report-header">
+          <h2 class="report-title">{{ reportData.scaleName }} - 测评报告</h2>
+          <div class="report-meta">
+            <el-tag :type="getReportLevelType(reportData.resultLevel)" size="large">
+              {{ reportData.resultLevel || "正常" }}
+            </el-tag>
+            <span class="report-time">生成时间: {{ formatDateTime(reportData.createTime) }}</span>
+          </div>
+        </div>
+
+        <!-- 基本信息 -->
+        <el-card shadow="never" class="report-card">
+          <template #header>
+            <span class="card-title">基本信息</span>
+          </template>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="测评人">
+              {{ reportData.userName }}
+            </el-descriptions-item>
+            <el-descriptions-item label="量表版本">
+              {{ reportData.versionName }}
+            </el-descriptions-item>
+            <el-descriptions-item label="总分">
+              <span class="score-value">{{ reportData.totalScore }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="完成率">
+              {{ reportData.completionRate }}%
+            </el-descriptions-item>
+            <el-descriptions-item label="答题时长">
+              {{ formatDuration(reportData.durationSecond) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="答题数">
+              {{ reportData.totalQuestions }} 题
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-card>
+
+        <!-- 维度得分 -->
+        <el-card
+          v-if="reportData.dimensionScores && reportData.dimensionScores.length > 0"
+          shadow="never"
+          class="report-card"
+        >
+          <template #header>
+            <span class="card-title">维度得分</span>
+          </template>
+          <div class="dimension-scores">
+            <div
+              v-for="dim in reportData.dimensionScores"
+              :key="dim.dimensionName"
+              class="dimension-item"
+            >
+              <div class="dimension-header">
+                <span class="dimension-name">{{ dim.dimensionName }}</span>
+                <el-tag :type="getDimensionLevelType(dim.level)" size="small">
+                  {{ dim.level }}
+                </el-tag>
+              </div>
+              <div class="dimension-score">
+                <el-progress
+                  :percentage="dim.scoreRate"
+                  :color="getDimensionColor(dim.scoreRate)"
+                  :stroke-width="20"
+                >
+                  <span class="progress-text">{{ dim.score }} / {{ dim.maxScore }}</span>
+                </el-progress>
+              </div>
+              <div class="dimension-desc">{{ dim.description }}</div>
+            </div>
+          </div>
+        </el-card>
+
+        <!-- 建议 -->
+        <el-card v-if="reportData.suggestion" shadow="never" class="report-card">
+          <template #header>
+            <span class="card-title">专业建议</span>
+          </template>
+          <div class="suggestion-content">
+            {{ reportData.suggestion }}
+          </div>
+        </el-card>
+      </div>
+
+      <el-empty v-else description="暂无报告数据" />
+
+      <template #footer>
+        <el-button @click="reportDialogVisible = false">关闭</el-button>
+        <el-button type="primary" @click="handlePrintReport">打印报告</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 defineOptions({ name: "MyTasks" });
 
-import { useRouter } from "vue-router";
 import AssessmentAssignmentAPI, {
   type MyTaskVO,
   type AssessmentAssignmentPageQuery,
 } from "@/api/psym/assessment-assignment-api";
+import ReportAPI, { type ReportDetailVO } from "@/api/report/report-api";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Document, Clock, EditPen, SuccessFilled, Calendar } from "@element-plus/icons-vue";
-
-const router = useRouter();
+import {
+  Document,
+  Clock,
+  EditPen,
+  SuccessFilled,
+  Calendar,
+  Loading,
+} from "@element-plus/icons-vue";
+import Assessment from "@/views/eva/assessment/index.vue";
 
 const queryFormRef = ref();
 const loading = ref(false);
@@ -254,6 +393,22 @@ const taskList = ref<MyTaskVO[]>([]);
 const total = ref(0);
 const detailDialogVisible = ref(false);
 const currentTask = ref<MyTaskVO | null>(null);
+
+// 答题弹窗相关
+const assessmentDialogVisible = ref(false);
+const assessmentParams = reactive({
+  assignmentId: undefined as number | undefined,
+  planId: undefined as number | undefined,
+  versionId: undefined as number | undefined,
+  planName: "",
+  scaleName: "",
+  versionName: "",
+});
+
+// 报告弹窗相关
+const reportDialogVisible = ref(false);
+const reportLoading = ref(false);
+const reportData = ref<ReportDetailVO | null>(null);
 
 // 查询参数
 const queryParams = reactive<AssessmentAssignmentPageQuery>({
@@ -341,35 +496,111 @@ const handleStartTask = (row: MyTaskVO) => {
     type: "info",
   })
     .then(() => {
-      const params = {
-        assignmentId: row.id,
-        planId: row.planId,
-        versionId: row.versionId,
-        planName: row.planName,
-        scaleName: row.scaleName,
-        versionName: row.versionName,
-      };
+      // 设置答题参数
+      assessmentParams.assignmentId = row.id;
+      assessmentParams.planId = row.planId;
+      assessmentParams.versionId = row.versionId;
+      assessmentParams.planName = row.planName || "";
+      assessmentParams.scaleName = row.scaleName || "";
+      assessmentParams.versionName = row.versionName || "";
 
-      console.log("跳转参数:", params);
-      console.log("跳转到: /eva/assessment");
+      console.log("打开答题弹窗，参数:", assessmentParams);
 
-      // 跳转到答题页面
-      router.push({
-        path: "/eva/assessment",
-        query: params,
-      });
+      // 关闭详情弹窗，打开答题弹窗
+      detailDialogVisible.value = false;
+      assessmentDialogVisible.value = true;
     })
     .catch(() => {
       console.log("用户取消答题");
     });
-  detailDialogVisible.value = false;
+};
+
+// 清空答题参数
+const clearAssessmentParams = () => {
+  assessmentParams.assignmentId = undefined;
+  assessmentParams.planId = undefined;
+  assessmentParams.versionId = undefined;
+  assessmentParams.planName = "";
+  assessmentParams.scaleName = "";
+  assessmentParams.versionName = "";
+};
+
+// 弹窗关闭前确认（点击右上角X按钮时触发）
+const handleBeforeCloseAssessment = (done: () => void) => {
+  ElMessageBox.confirm("答题尚未提交，确定要退出吗？", "提示", {
+    confirmButtonText: "确定退出",
+    cancelButtonText: "继续答题",
+    type: "warning",
+  })
+    .then(() => {
+      clearAssessmentParams();
+      done(); // 允许关闭
+    })
+    .catch(() => {
+      // 取消关闭，不调用 done()
+    });
+};
+
+// 答题弹窗关闭（由子组件的"退出答题"按钮触发）
+const handleAssessmentClose = () => {
+  ElMessageBox.confirm("答题尚未提交，确定要退出吗？", "提示", {
+    confirmButtonText: "确定退出",
+    cancelButtonText: "继续答题",
+    type: "warning",
+  })
+    .then(() => {
+      clearAssessmentParams();
+      assessmentDialogVisible.value = false;
+    })
+    .catch(() => {
+      // 用户取消，不关闭弹窗
+    });
+};
+
+// 答题成功（提交成功后，不需要确认直接关闭）
+const handleAssessmentSuccess = () => {
+  clearAssessmentParams();
+  assessmentDialogVisible.value = false;
+  // 刷新任务列表
+  getTaskList();
 };
 
 // 查看报告
-const handleViewReport = (row: MyTaskVO) => {
-  ElMessage.info("跳转到报告页面");
-  console.log("查看报告，任务ID:", row.id);
-  // TODO: 跳转到报告页面
+const handleViewReport = async (row: MyTaskVO) => {
+  console.log("查看报告，任务信息:", row);
+
+  // 打开弹窗
+  reportDialogVisible.value = true;
+  reportLoading.value = true;
+  reportData.value = null;
+
+  try {
+    // TODO: 这里需要根据任务ID获取测评记录ID
+    // 暂时假设可以直接用任务ID或者需要先查询测评记录
+    // const recordId = await getRecordIdByAssignmentId(row.id);
+
+    // 临时使用任务ID作为recordId（实际需要根据业务调整）
+    const recordId = row.id;
+
+    console.log("获取报告，recordId:", recordId);
+
+    const report = await ReportAPI.getByRecordId(recordId!);
+
+    reportData.value = report;
+
+    console.log("✅ 报告加载成功:", report);
+  } catch (error: any) {
+    console.error("❌ 加载报告失败:", error);
+    ElMessage.error(error.message || "加载报告失败");
+    reportDialogVisible.value = false;
+  } finally {
+    reportLoading.value = false;
+  }
+};
+
+// 打印报告
+const handlePrintReport = () => {
+  window.print();
 };
 
 // 查看详情
@@ -427,6 +658,56 @@ const formatDateTime = (date: Date | undefined) => {
     2,
     "0"
   )}`;
+};
+
+// 格式化时长
+const formatDuration = (seconds: number | undefined) => {
+  if (!seconds) return "-";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+
+  const parts = [];
+  if (h > 0) parts.push(`${h}小时`);
+  if (m > 0) parts.push(`${m}分钟`);
+  if (s > 0 || parts.length === 0) parts.push(`${s}秒`);
+
+  return parts.join("");
+};
+
+// 获取报告等级类型
+const getReportLevelType = (level: string | undefined) => {
+  const levelMap: Record<string, any> = {
+    正常: "success",
+    轻度: "info",
+    中度: "warning",
+    重度: "danger",
+    低风险: "success",
+    中风险: "warning",
+    高风险: "danger",
+  };
+  return levelMap[level || "正常"] || "info";
+};
+
+// 获取维度等级类型
+const getDimensionLevelType = (level: string | undefined) => {
+  const levelMap: Record<string, any> = {
+    优秀: "success",
+    良好: "success",
+    正常: "info",
+    轻度: "warning",
+    中度: "warning",
+    重度: "danger",
+  };
+  return levelMap[level || "正常"] || "info";
+};
+
+// 获取维度颜色
+const getDimensionColor = (scoreRate: number) => {
+  if (scoreRate >= 80) return "#67c23a";
+  if (scoreRate >= 60) return "#e6a23c";
+  if (scoreRate >= 40) return "#f56c6c";
+  return "#909399";
 };
 
 // 初始化
@@ -616,6 +897,132 @@ onMounted(() => {
 .task-detail {
   :deep(.el-descriptions__label) {
     font-weight: 600;
+  }
+}
+
+:deep(.assessment-dialog) {
+  .el-dialog__body {
+    max-height: 75vh;
+    padding: 0;
+    overflow-y: auto;
+  }
+}
+
+:deep(.report-dialog) {
+  .el-dialog__body {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+}
+
+.report-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: #606266;
+
+  .loading-icon {
+    margin-bottom: 16px;
+    font-size: 48px;
+  }
+
+  p {
+    font-size: 16px;
+  }
+}
+
+.report-content {
+  .report-header {
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #e4e7ed;
+
+    .report-title {
+      margin: 0 0 12px 0;
+      font-size: 24px;
+      font-weight: 600;
+      color: #303133;
+    }
+
+    .report-meta {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+
+      .report-time {
+        font-size: 14px;
+        color: #909399;
+      }
+    }
+  }
+
+  .report-card {
+    margin-bottom: 20px;
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #303133;
+    }
+
+    .score-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #409eff;
+    }
+  }
+
+  .dimension-scores {
+    .dimension-item {
+      padding: 16px;
+      margin-bottom: 16px;
+      background: #f5f7fa;
+      border-radius: 8px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .dimension-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+
+        .dimension-name {
+          font-size: 16px;
+          font-weight: 600;
+          color: #303133;
+        }
+      }
+
+      .dimension-score {
+        margin-bottom: 12px;
+
+        .progress-text {
+          font-size: 14px;
+          font-weight: 600;
+        }
+      }
+
+      .dimension-desc {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #606266;
+      }
+    }
+  }
+
+  .suggestion-content {
+    padding: 16px;
+    font-size: 15px;
+    line-height: 1.8;
+    color: #303133;
+    background: #f0f9ff;
+    border-left: 4px solid #409eff;
+    border-radius: 4px;
   }
 }
 </style>

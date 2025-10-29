@@ -11,11 +11,11 @@
       <!-- 顶部进度条 -->
       <div class="assessment-header">
         <div class="header-info">
-          <h2 class="assessment-title">{{ assessmentInfo.planName }}</h2>
+          <h2 class="assessment-title">{{ props.planName }}</h2>
           <div class="header-meta">
             <span class="scale-info">
               <el-icon><Document /></el-icon>
-              {{ assessmentInfo.scaleName }} - {{ assessmentInfo.versionName }}
+              {{ props.scaleName }} - {{ props.versionName }}
             </span>
             <span class="time-info">
               <el-icon><Clock /></el-icon>
@@ -112,32 +112,41 @@
       <!-- 底部导航 -->
       <div class="assessment-footer">
         <div class="nav-buttons">
-          <el-button size="large" :disabled="currentIndex === 0" @click="handlePrevious">
-            <el-icon><ArrowLeft /></el-icon>
-            上一题
+          <el-button size="large" @click="handleExit">
+            <el-icon><Close /></el-icon>
+            退出答题
           </el-button>
 
-          <el-button
-            v-if="currentIndex < questions.length - 1"
-            type="primary"
-            size="large"
-            :disabled="!isAnswered"
-            @click="handleNext"
-          >
-            下一题
-            <el-icon><ArrowRight /></el-icon>
-          </el-button>
+          <div class="nav-buttons-center">
+            <el-button size="large" :disabled="currentIndex === 0" @click="handlePrevious">
+              <el-icon><ArrowLeft /></el-icon>
+              上一题
+            </el-button>
 
-          <el-button
-            v-else
-            type="success"
-            size="large"
-            :disabled="!isAnswered"
-            @click="handleSubmit"
-          >
-            <el-icon><Check /></el-icon>
-            提交测评
-          </el-button>
+            <el-button
+              v-if="currentIndex < questions.length - 1"
+              type="primary"
+              size="large"
+              :disabled="!isAnswered"
+              @click="handleNext"
+            >
+              下一题
+              <el-icon><ArrowRight /></el-icon>
+            </el-button>
+
+            <el-button
+              v-else
+              type="success"
+              size="large"
+              :disabled="!isAnswered"
+              @click="handleSubmit"
+            >
+              <el-icon><Check /></el-icon>
+              提交测评
+            </el-button>
+          </div>
+
+          <div style="width: 120px"></div>
         </div>
 
         <!-- 题目导航 -->
@@ -169,9 +178,8 @@
 <script setup lang="ts">
 defineOptions({ name: "Assessment" });
 
-import { useRoute, useRouter, onBeforeRouteLeave } from "vue-router";
 import QuestionAPI, { type QuestionDetailVO } from "@/api/psy/question-api";
-import { type UserAnswerForm } from "@/api/psy/user-answer-api";
+import UserAnswerAPI, { type UserAnswerForm } from "@/api/psy/user-answer-api";
 import AssessmentRecordAPI from "@/api/psy/assessment-record-api";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
@@ -182,15 +190,32 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  Close,
 } from "@element-plus/icons-vue";
 
-const route = useRoute();
-const router = useRouter();
+// 定义 props
+interface Props {
+  assignmentId?: number;
+  planId?: number;
+  versionId: number;
+  planName?: string;
+  scaleName?: string;
+  versionName?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  planName: "",
+  scaleName: "",
+  versionName: "",
+});
+
+// 定义 emits
+const emit = defineEmits<{
+  close: [];
+  success: [];
+}>();
 
 // 页面参数
-const assignmentId = ref<number>();
-const planId = ref<number>();
-const versionId = ref<number>();
 const recordId = ref<number>();
 
 // 基础数据
@@ -198,15 +223,8 @@ const loading = ref(false);
 const questions = ref<QuestionDetailVO[]>([]);
 const currentIndex = ref(0);
 const answers = ref<any[]>([]);
-const startTime = ref<Date>(new Date());
-const elapsedTime = ref(0);
-
-// 测评信息
-const assessmentInfo = reactive({
-  planName: "",
-  scaleName: "",
-  versionName: "",
-});
+const elapsedTime = ref(0); // 总答题时长（秒）
+const questionStartTime = ref<Date>(new Date()); // 当前题目开始时间
 
 // 当前答案
 interface CurrentAnswer {
@@ -242,29 +260,20 @@ const isAnswered = computed(() => currentAnswer.value.isAnswered);
 const init = async () => {
   try {
     console.log("===== 答题画面初始化 =====");
-    console.log("route.query:", route.query);
+    console.log("props:", props);
 
-    // 获取路由参数
-    assignmentId.value = Number(route.query.assignmentId);
-    planId.value = Number(route.query.planId);
-    versionId.value = Number(route.query.versionId);
+    console.log("参数:");
+    console.log("- assignmentId:", props.assignmentId);
+    console.log("- planId:", props.planId);
+    console.log("- versionId:", props.versionId);
+    console.log("- planName:", props.planName);
+    console.log("- scaleName:", props.scaleName);
+    console.log("- versionName:", props.versionName);
 
-    assessmentInfo.planName = route.query.planName as string;
-    assessmentInfo.scaleName = route.query.scaleName as string;
-    assessmentInfo.versionName = route.query.versionName as string;
-
-    console.log("解析后的参数:");
-    console.log("- assignmentId:", assignmentId.value);
-    console.log("- planId:", planId.value);
-    console.log("- versionId:", versionId.value);
-    console.log("- planName:", assessmentInfo.planName);
-    console.log("- scaleName:", assessmentInfo.scaleName);
-    console.log("- versionName:", assessmentInfo.versionName);
-
-    if (!versionId.value) {
+    if (!props.versionId) {
       console.error("❌ 缺少 versionId 参数");
       ElMessage.error("缺少必要参数");
-      router.back();
+      emit("close");
       return;
     }
 
@@ -282,17 +291,47 @@ const init = async () => {
   }
 };
 
+// 题型转换函数
+const convertQuestionType = (type: string | undefined): string => {
+  const typeMap: Record<string, string> = {
+    "1": "single", // 单选
+    "2": "multiple", // 多选
+    "3": "likert", // 李克特量表
+    "4": "text", // 主观题
+  };
+  return typeMap[type || "1"] || "single";
+};
+
+// 生成选项标识 (A, B, C, D...)
+const generateOptionKey = (index: number): string => {
+  return String.fromCharCode(65 + index); // 65 是 'A' 的 ASCII 码
+};
+
 // 加载题目
 const loadQuestions = async () => {
   loading.value = true;
   try {
-    console.log("正在加载题目，versionId:", versionId.value);
-    console.log("API URL: /api/v1/question/version/" + versionId.value);
+    console.log("正在加载题目，versionId:", props.versionId);
+    console.log("API URL: /api/v1/question/version/" + props.versionId);
 
-    questions.value = await QuestionAPI.getQuestionsByVersion(versionId.value!);
+    const rawQuestions = await QuestionAPI.getQuestionsByVersion(props.versionId);
+
+    console.log("✅ 原始题目数据:", rawQuestions);
+
+    // 转换题目数据格式
+    questions.value = rawQuestions.map((q) => ({
+      ...q,
+      // 转换题型
+      questionType: convertQuestionType(q.questionType),
+      // 为选项生成 optionKey (A, B, C, D...)
+      options: (q.options || []).map((opt, index) => ({
+        ...opt,
+        optionKey: opt.optionKey || generateOptionKey(index),
+      })),
+    }));
 
     console.log("✅ 题目加载成功，数量:", questions.value.length);
-    console.log("题目数据:", questions.value);
+    console.log("转换后的题目数据:", questions.value);
 
     // 初始化答案数组
     answers.value = new Array(questions.value.length).fill(null).map(() => ({
@@ -303,7 +342,7 @@ const loadQuestions = async () => {
     console.error("❌ 加载题目失败:");
     console.error("- 错误对象:", error);
     console.error("- 错误消息:", error.message);
-    console.error("- versionId:", versionId.value);
+    console.error("- versionId:", props.versionId);
 
     ElMessage.error(`加载题目失败: ${error.message || "未知错误"}`);
   } finally {
@@ -314,11 +353,58 @@ const loadQuestions = async () => {
 // 初始化或加载测评记录
 const initOrLoadRecord = async () => {
   try {
-    // TODO: 创建或获取测评记录
-    // 如果是继续答题，需要加载已保存的答案
-    recordId.value = 1; // 临时
+    console.log("初始化测评记录, assignmentId:", props.assignmentId);
+
+    if (!props.assignmentId) {
+      console.warn("⚠️ 缺少 assignmentId，无法创建测评记录");
+      ElMessage.warning("缺少任务信息");
+      return;
+    }
+
+    // 调用后端接口：获取或创建测评记录
+    const record = await AssessmentRecordAPI.getOrCreate(props.assignmentId);
+
+    recordId.value = record.id;
+
+    console.log("✅ 测评记录初始化成功, recordId:", recordId.value);
+    console.log("测评记录详情:", record);
+
+    // 如果是继续答题，加载已保存的答案
+    if (record.status === 1) {
+      console.log("检测到未完成的测评记录，加载已保存的答案...");
+      await loadSavedAnswers();
+    }
   } catch (error) {
-    console.error("初始化测评记录失败:", error);
+    console.error("❌ 初始化测评记录失败:", error);
+    ElMessage.error("初始化测评记录失败");
+  }
+};
+
+// 加载已保存的答案（继续答题时）
+const loadSavedAnswers = async () => {
+  try {
+    if (!recordId.value) return;
+
+    const savedAnswers = await UserAnswerAPI.getAnswersByRecord(recordId.value);
+
+    console.log("加载到的已保存答案:", savedAnswers);
+
+    // 将已保存的答案映射到 answers 数组
+    savedAnswers.forEach((savedAnswer) => {
+      const questionIndex = questions.value.findIndex((q) => q.id === savedAnswer.questionId);
+
+      if (questionIndex !== -1) {
+        answers.value[questionIndex] = {
+          optionId: savedAnswer.optionId,
+          answerText: savedAnswer.answerText,
+          isAnswered: true,
+        };
+      }
+    });
+
+    console.log(`✅ 已加载 ${savedAnswers.length} 条答案`);
+  } catch (error) {
+    console.error("❌ 加载已保存答案失败:", error);
   }
 };
 
@@ -335,6 +421,8 @@ const loadCurrentAnswer = () => {
       isAnswered: false,
     };
   }
+  // 重置当前题目开始时间
+  questionStartTime.value = new Date();
 };
 
 // 处理答案变化
@@ -381,6 +469,11 @@ const handleJumpTo = (index: number) => {
   }
 };
 
+// 退出答题
+const handleExit = () => {
+  emit("close");
+};
+
 // 保存当前答案
 const saveCurrentAnswer = async () => {
   if (!isAnswered.value) return;
@@ -389,19 +482,26 @@ const saveCurrentAnswer = async () => {
     const question = currentQuestion.value;
     const answer = currentAnswer.value;
 
+    // 计算当前题目的答题时长
+    const timeSpent = Math.floor((Date.now() - questionStartTime.value.getTime()) / 1000);
+
     const answerData: UserAnswerForm = {
       recordId: recordId.value,
       questionId: question.id,
       optionId: answer.optionId,
       answerText: answer.answerText,
-      timeSpent: Math.floor((Date.now() - startTime.value.getTime()) / 1000),
+      timeSpent,
     };
 
-    // TODO: 调用API保存答案
-    // await UserAnswerAPI.saveAnswer(answerData);
-    console.log("保存答案:", answerData);
+    console.log("保存答案到后端:", answerData);
+
+    // 调用API保存答案（每道题答完就保存）
+    await UserAnswerAPI.saveAnswer(answerData);
+
+    console.log("✅ 答案保存成功");
   } catch (error) {
-    console.error("保存答案失败:", error);
+    console.error("❌ 保存答案失败:", error);
+    ElMessage.warning("答案保存失败，请检查网络连接");
   }
 };
 
@@ -442,17 +542,18 @@ const submitAssessment = async () => {
   try {
     loading.value = true;
 
-    // 保存所有答案
-    await saveAllAnswers();
+    // 保存当前题目的答案（如果有的话）
+    await saveCurrentAnswer();
 
     // 提交测评记录
     await AssessmentRecordAPI.submit(recordId.value!);
 
     ElMessage.success("提交成功！");
 
-    // 跳转到结果页或任务列表
+    // 通知父组件提交成功
     setTimeout(() => {
-      router.push("/eva/my-tasks");
+      emit("success");
+      emit("close");
     }, 1500);
   } catch (error) {
     console.error("提交失败:", error);
@@ -460,28 +561,6 @@ const submitAssessment = async () => {
   } finally {
     loading.value = false;
   }
-};
-
-// 保存所有答案
-const saveAllAnswers = async () => {
-  const answerList: UserAnswerForm[] = [];
-
-  questions.value.forEach((question, index) => {
-    const answer = answers.value[index];
-    if (answer && answer.isAnswered) {
-      answerList.push({
-        recordId: recordId.value,
-        questionId: question.id,
-        optionId: answer.optionId,
-        answerText: answer.answerText,
-        timeSpent: 0,
-      });
-    }
-  });
-
-  // TODO: 批量保存答案
-  // await UserAnswerAPI.batchSaveAnswers(answerList);
-  console.log("批量保存答案:", answerList);
 };
 
 // 计时器
@@ -506,26 +585,6 @@ const formatTime = (seconds: number) => {
   return parts.join("");
 };
 
-// 页面离开前确认
-onBeforeRouteLeave((to, from, next) => {
-  if (loading.value) {
-    next();
-    return;
-  }
-
-  ElMessageBox.confirm("答题尚未提交，确定要离开吗？", "提示", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning",
-  })
-    .then(() => {
-      next();
-    })
-    .catch(() => {
-      next(false);
-    });
-});
-
 // 初始化和清理
 onMounted(() => {
   init();
@@ -540,9 +599,8 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .assessment-container {
-  min-height: 100vh;
   padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #f5f7fa;
 }
 
 .loading-wrapper {
@@ -550,8 +608,8 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  color: white;
+  min-height: 400px;
+  color: #606266;
 
   .el-icon {
     margin-bottom: 16px;
@@ -564,7 +622,7 @@ onUnmounted(() => {
 }
 
 .assessment-wrapper {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
@@ -722,9 +780,14 @@ onUnmounted(() => {
 
   .nav-buttons {
     display: flex;
-    gap: 16px;
-    justify-content: center;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 24px;
+
+    .nav-buttons-center {
+      display: flex;
+      gap: 16px;
+    }
 
     .el-button {
       min-width: 120px;
