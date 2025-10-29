@@ -274,6 +274,7 @@ const stats = reactive({
 const getTaskList = async () => {
   loading.value = true;
   try {
+    // getMyTasks API 会自动获取当前登录用户的任务，不需要传递 userId
     const res = await AssessmentAssignmentAPI.getMyTasks(queryParams);
     taskList.value = res.list;
     total.value = res.total;
@@ -313,6 +314,9 @@ const handleReset = () => {
 const handleStartTask = (row: MyTaskVO) => {
   console.log("===== 开始答题 =====");
   console.log("任务信息:", row);
+  console.log("versionId 值:", row.versionId);
+  console.log("versionId 类型:", typeof row.versionId);
+  console.log("完整数据 JSON:", JSON.stringify(row, null, 2));
 
   // 数据验证
   if (!row.versionId) {

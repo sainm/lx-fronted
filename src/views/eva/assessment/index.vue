@@ -286,15 +286,26 @@ const init = async () => {
 const loadQuestions = async () => {
   loading.value = true;
   try {
+    console.log("正在加载题目，versionId:", versionId.value);
+    console.log("API URL: /api/v1/question/version/" + versionId.value);
+
     questions.value = await QuestionAPI.getQuestionsByVersion(versionId.value!);
+
+    console.log("✅ 题目加载成功，数量:", questions.value.length);
+    console.log("题目数据:", questions.value);
+
     // 初始化答案数组
     answers.value = new Array(questions.value.length).fill(null).map(() => ({
       isAnswered: false,
     }));
     loadCurrentAnswer();
-  } catch (error) {
-    console.error("加载题目失败:", error);
-    ElMessage.error("加载题目失败");
+  } catch (error: any) {
+    console.error("❌ 加载题目失败:");
+    console.error("- 错误对象:", error);
+    console.error("- 错误消息:", error.message);
+    console.error("- versionId:", versionId.value);
+
+    ElMessage.error(`加载题目失败: ${error.message || "未知错误"}`);
   } finally {
     loading.value = false;
   }

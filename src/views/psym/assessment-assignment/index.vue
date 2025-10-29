@@ -43,6 +43,7 @@ import AssessmentAssignmentAPI, {
   AssessmentAssignmentForm,
   AssessmentAssignmentPageQuery,
 } from "@/api/psym/assessment-assignment-api";
+import AssessmentPlanAPI from "@/api/psym/assessment-plan-api";
 import UserAPI from "@/api/system/user-api";
 import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/components/CURD/types";
 import usePage from "@/components/CURD/usePage";
@@ -65,6 +66,9 @@ const {
 
 // 用户选项列表
 const userOptions = ref<{ label: string; value: string }[]>([]);
+
+// 测评计划选项列表
+const planOptions = ref<{ label: string; value: number }[]>([]);
 
 // 搜索配置
 const searchConfig: ISearchConfig = reactive({
@@ -110,6 +114,7 @@ const contentConfig: IContentConfig<AssessmentAssignmentPageQuery> = reactive({
   table: {
     border: true,
     highlightCurrentRow: true,
+    width: "100%",
   },
   // 主键
   pk: "id",
@@ -139,11 +144,36 @@ const contentConfig: IContentConfig<AssessmentAssignmentPageQuery> = reactive({
     { type: "selection", width: 55, align: "center" },
     { type: "index", label: "序号", width: 60, align: "center" },
     // { label: "任务分配ID", prop: "id" },
-    // { label: "测评计划ID", prop: "planId" },
-    { label: "测评计划名称", prop: "planName" },
-    { label: "用户ID（单人分配）", prop: "userId" },
-    { label: "用户组ID（批量分配）", prop: "groupId" },
-    { label: "分配类型：0个人 1组", prop: "assignType" },
+    {
+      label: "测评计划",
+      prop: "planId",
+      minWidth: 200,
+      formatter: (row: any) => {
+        const plan = planOptions.value.find((p) => p.value === row.planId);
+        return plan ? plan.label : row.planId;
+      },
+    },
+    {
+      label: "用户",
+      prop: "userId",
+      width: 180,
+      formatter: (row: any) => {
+        const user = userOptions.value.find((u) => u.value === row.userId);
+        return user ? user.label : row.userId || "-";
+      },
+    },
+    { label: "用户组", prop: "groupId", width: 120 },
+    {
+      label: "分配类型",
+      prop: "assignType",
+      width: 100,
+      align: "center",
+      templet: "list",
+      selectList: {
+        0: "个人",
+        1: "组",
+      },
+    },
     // { label: "答题进度百分比", prop: "progress" },
     {
       label: "状态",
@@ -200,21 +230,24 @@ const addModalConfig: IModalConfig<AssessmentAssignmentForm> = reactive({
   },
   // 表单项配置
   formItems: [
+    // {
+    //   type: "input",
+    //   attrs: {
+    //     placeholder: "任务分配ID",
+    //   },
+    //   label: "任务分配ID",
+    //   prop: "id",
+    // },
     {
-      type: "input",
+      type: "select",
       attrs: {
-        placeholder: "任务分配ID",
+        placeholder: "请选择测评计划",
+        clearable: true,
+        filterable: true,
       },
-      label: "任务分配ID",
-      prop: "id",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "测评计划ID",
-      },
-      label: "测评计划ID",
+      label: "测评计划",
       prop: "planId",
+      options: planOptions,
     },
     {
       type: "select",
@@ -230,27 +263,31 @@ const addModalConfig: IModalConfig<AssessmentAssignmentForm> = reactive({
     {
       type: "input",
       attrs: {
-        placeholder: "用户组ID（批量分配）",
+        placeholder: "用户组",
       },
-      label: "用户组ID（批量分配）",
+      label: "用户组",
       prop: "groupId",
     },
     {
-      type: "input",
+      type: "select",
       attrs: {
-        placeholder: "分配类型：0个人 1组",
+        placeholder: "请选择分配类型",
       },
-      label: "分配类型：0个人 1组",
+      label: "分配类型",
       prop: "assignType",
+      options: [
+        { label: "个人", value: 0 },
+        { label: "组", value: 1 },
+      ],
     },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "答题进度百分比",
-      },
-      label: "答题进度百分比",
-      prop: "progress",
-    },
+    // {
+    //   type: "input",
+    //   attrs: {
+    //     placeholder: "答题进度百分比",
+    //   },
+    //   label: "答题进度百分比",
+    //   prop: "progress",
+    // },
     {
       type: "select",
       attrs: {
@@ -266,14 +303,14 @@ const addModalConfig: IModalConfig<AssessmentAssignmentForm> = reactive({
         { label: "已过期", value: 3 },
       ],
     },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "分配人ID",
-      },
-      label: "分配人ID",
-      prop: "assignedBy",
-    },
+    // {
+    //   type: "input",
+    //   attrs: {
+    //     placeholder: "分配人ID",
+    //   },
+    //   label: "分配人ID",
+    //   prop: "assignedBy",
+    // },
   ],
   // 提交函数
   formAction: (data: AssessmentAssignmentForm) => {
@@ -329,8 +366,23 @@ const fetchUserList = async () => {
   }
 };
 
-// 组件挂载时获取用户列表
-onMounted(() => {
+// 获取测评计划列表
+const fetchPlanList = async () => {
+  try {
+    const res = await AssessmentPlanAPI.getPage({ pageNum: 1, pageSize: 1000 });
+    planOptions.value = res.list.map((item: any) => ({
+      label: item.name,
+      value: item.id,
+    }));
+  } catch (error) {
+    console.error("获取测评计划列表失败:", error);
+  }
+};
+
+// 组件挂载时先加载测评计划列表
+onMounted(async () => {
+  // 先加载测评计划列表，确保 parseData 能正确转换数据
+  await fetchPlanList();
   fetchUserList();
 });
 </script>
