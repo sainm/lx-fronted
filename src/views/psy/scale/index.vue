@@ -6,11 +6,7 @@
       :search-config="searchConfig"
       @query-click="handleQueryClick"
       @reset-click="handleResetClick"
-    >
-      <template #applicableGender="scope">
-        <Dict v-model="scope.formData[scope.prop]" code="gender" v-bind="scope.attrs" />
-      </template>
-    </page-search>
+    />
 
     <!-- 列表 -->
     <page-content
@@ -22,29 +18,21 @@
       @toolbar-click="handleToolbarClick"
       @operate-click="handleOperateClick"
       @filter-change="handleFilterChange"
-    >
-      <template #applicableGender="scope">
-        <DictLabel v-model="scope.row[scope.prop]" code="gender" />
-      </template>
-    </page-content>
+    />
 
     <!-- 新增 -->
-    <page-modal ref="addModalRef" :modal-config="addModalConfig" @submit-click="handleSubmitClick">
-      <template #applicableGender="scope">
-        <Dict v-model="scope.formData[scope.prop]" code="gender" v-bind="scope.attrs" />
-      </template>
-    </page-modal>
+    <page-modal
+      ref="addModalRef"
+      :modal-config="addModalConfig"
+      @submit-click="handleSubmitClick"
+    />
 
     <!-- 编辑 -->
     <page-modal
       ref="editModalRef"
       :modal-config="editModalConfig"
       @submit-click="handleSubmitClick"
-    >
-      <template #applicableGender="scope">
-        <Dict v-model="scope.formData[scope.prop]" code="gender" v-bind="scope.attrs" />
-      </template>
-    </page-modal>
+    />
 
     <!-- 查看量表版本弹窗 -->
     <el-dialog
@@ -134,15 +122,19 @@ const searchConfig: ISearchConfig = reactive({
       },
     },
     {
-      type: "custom",
-      slotName: "applicableGender",
+      type: "select",
       label: "适用性别",
       prop: "applicableGender",
       attrs: {
-        placeholder: "适用性别",
+        placeholder: "请选择适用性别",
         clearable: true,
         style: { width: "200px" },
       },
+      options: [
+        { label: "男", value: 0 },
+        { label: "女", value: 1 },
+        { label: "不限", value: 2 },
+      ],
     },
   ],
 });
@@ -193,8 +185,17 @@ const contentConfig: IContentConfig<ScalePageQuery> = reactive({
       label: "适用性别",
       prop: "applicableGender",
       width: 100,
-      templet: "custom",
-      slotName: "applicableGender",
+      formatter: (row: any, column: any, cellValue: any) => {
+        const genderMap: Record<number | string, string> = {
+          0: "男",
+          1: "女",
+          2: "不限",
+          男: "男",
+          女: "女",
+          不限: "不限",
+        };
+        return genderMap[cellValue] || cellValue || "-";
+      },
     },
     {
       label: "操作",
@@ -277,22 +278,39 @@ const addModalConfig: IModalConfig<ScaleForm> = reactive({
       prop: "description",
     },
     {
-      type: "input",
+      type: "select",
       attrs: {
-        placeholder: "适用年龄段",
+        placeholder: "请选择适用年龄段",
+        clearable: true,
+        style: { width: "100%" },
       },
       label: "适用年龄段",
       prop: "applicableAge",
+      options: [
+        { label: "儿童（6-12岁）", value: "儿童（6-12岁）" },
+        { label: "青少年（13-17岁）", value: "青少年（13-17岁）" },
+        { label: "青年（18-25岁）", value: "青年（18-25岁）" },
+        { label: "成年早期（26-35岁）", value: "成年早期（26-35岁）" },
+        { label: "成年中期（36-45岁）", value: "成年中期（36-45岁）" },
+        { label: "成年后期（46-55岁）", value: "成年后期（46-55岁）" },
+        { label: "老年（56岁以上）", value: "老年（56岁以上）" },
+        { label: "全年龄段", value: "全年龄段" },
+      ],
     },
     {
-      type: "custom",
-      label: "适用性别",
-      prop: "applicableGender",
-      slotName: "applicableGender",
+      type: "select",
       attrs: {
-        placeholder: "适用性别",
+        placeholder: "请选择适用性别",
+        clearable: true,
         style: { width: "100%" },
       },
+      label: "适用性别",
+      prop: "applicableGender",
+      options: [
+        { label: "男", value: 0 },
+        { label: "女", value: 1 },
+        { label: "不限", value: 2 },
+      ],
     },
   ],
   // 提交函数

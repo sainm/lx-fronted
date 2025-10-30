@@ -101,6 +101,8 @@ export interface NormSamplePageVO {
   id?: number;
   /** 所属量表版本ID */
   versionId?: number;
+  /** 量表版本名称 */
+  versionName?: string;
   /** 常模名称（如：大学生样本、青少年女性样本） */
   sampleName?: string;
   /** 性别（male/female/all） */

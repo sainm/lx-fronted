@@ -39,7 +39,8 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column key="id" label="预警ID" prop="id" min-width="150" align="center" />
+        <el-table-column label="序号" type="index" width="60" align="center" :index="indexMethod" />
+        <!-- <el-table-column key="id" label="预警ID" prop="id" min-width="150" align="center" /> -->
         <el-table-column key="userId" label="用户ID" prop="userId" min-width="150" align="center" />
         <el-table-column
           key="recordId"
@@ -55,13 +56,13 @@
           min-width="150"
           align="center"
         />
-        <el-table-column
-          key="level"
-          label="预警等级：1一般 2严重 3紧急"
-          prop="level"
-          min-width="150"
-          align="center"
-        />
+        <el-table-column key="level" label="预警等级" prop="level" min-width="150" align="center">
+          <template #default="scope">
+            <el-tag :type="getLevelTagType(scope.row.level) as any" size="small">
+              {{ formatLevelText(scope.row.level) }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column
           key="triggerRule"
           label="触发规则标识（如规则编号）"
@@ -78,11 +79,17 @@
         />
         <el-table-column
           key="isResolved"
-          label="是否已处理：0未处理 1已处理"
+          label="是否已处理"
           prop="isResolved"
           min-width="150"
           align="center"
-        />
+        >
+          <template #default="scope">
+            <el-tag :type="getResolvedTagType(scope.row.isResolved) as any" size="small">
+              {{ formatResolvedText(scope.row.isResolved) }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column
           key="handlerId"
           label="处理人ID"
@@ -97,7 +104,7 @@
           min-width="150"
           align="center"
         />
-        <el-table-column
+        <!-- <el-table-column
           key="createBy"
           label="创建人"
           prop="createBy"
@@ -124,9 +131,18 @@
           prop="updateTime"
           min-width="150"
           align="center"
-        />
-        <el-table-column fixed="right" label="操作" width="220">
+        /> -->
+        <el-table-column fixed="right" label="操作" width="280">
           <template #default="scope">
+            <el-button
+              type="info"
+              size="small"
+              link
+              icon="view"
+              @click="handleViewDetail(scope.row.id)"
+            >
+              详细
+            </el-button>
             <el-button
               v-hasPerm="['psy:warning:edit']"
               type="primary"
@@ -168,9 +184,9 @@
       @close="handleCloseDialog"
     >
       <el-form ref="dataFormRef" :model="formData" :rules="rules" label-width="100px">
-        <el-form-item label="预警ID" prop="id">
+        <!-- <el-form-item label="预警ID" prop="id">
           <el-input v-model="formData.id" placeholder="预警ID" />
-        </el-form-item>
+        </el-form-item> -->
 
         <el-form-item label="用户ID" prop="userId">
           <el-input v-model="formData.userId" placeholder="用户ID" />
@@ -249,6 +265,57 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 预警详细信息弹窗 -->
+    <el-dialog v-model="detailDialog.visible" title="预警详细信息" width="800px">
+      <el-descriptions v-loading="detailDialog.loading" :column="2" border>
+        <el-descriptions-item label="预警ID">{{ detailData.id || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="用户ID">{{ detailData.userId || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="关联测评记录ID">
+          {{ detailData.recordId || "-" }}
+        </el-descriptions-item>
+        <el-descriptions-item label="预警类型">
+          {{ detailData.warningType || "-" }}
+        </el-descriptions-item>
+        <el-descriptions-item label="预警等级">
+          <el-tag :type="getLevelTagType(detailData.level) as any" size="small">
+            {{ formatLevelText(detailData.level) }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="触发规则标识">
+          {{ detailData.triggerRule || "-" }}
+        </el-descriptions-item>
+        <el-descriptions-item label="是否已处理" :span="2">
+          <el-tag :type="detailData.isResolved === 1 ? 'success' : 'danger'">
+            {{ detailData.isResolved === 1 ? "已处理" : "未处理" }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="处理人ID">
+          {{ detailData.handlerId || "-" }}
+        </el-descriptions-item>
+        <el-descriptions-item label="处理时间">
+          {{ detailData.handleTime ? formatDateTime(detailData.handleTime) : "-" }}
+        </el-descriptions-item>
+        <el-descriptions-item label="详细说明" :span="2">
+          {{ detailData.description || "-" }}
+        </el-descriptions-item>
+        <el-descriptions-item label="创建人">{{ detailData.createBy || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="最后修改人">
+          {{ detailData.updateBy || "-" }}
+        </el-descriptions-item>
+        <el-descriptions-item label="创建时间">
+          {{ detailData.createTime ? formatDateTime(detailData.createTime) : "-" }}
+        </el-descriptions-item>
+        <el-descriptions-item label="更新时间">
+          {{ detailData.updateTime ? formatDateTime(detailData.updateTime) : "-" }}
+        </el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="detailDialog.visible = false">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -281,8 +348,17 @@ const dialog = reactive({
   visible: false,
 });
 
+// 详细信息弹窗
+const detailDialog = reactive({
+  visible: false,
+  loading: false,
+});
+
 // 测评预警记录表单数据
 const formData = reactive<WarningForm>({});
+
+// 预警详细信息数据
+const detailData = reactive<WarningForm>({});
 
 // 测评预警记录表单校验规则
 const rules = reactive({});
@@ -310,6 +386,11 @@ function handleResetQuery() {
 /** 行复选框选中记录选中ID集合 */
 function handleSelectionChange(selection: any) {
   removeIds.value = selection.map((item: any) => item.id);
+}
+
+/** 序号计算方法 */
+function indexMethod(index: number) {
+  return (queryParams.pageNum - 1) * queryParams.pageSize + index + 1;
 }
 
 /** 打开测评预警记录弹窗 */
@@ -386,6 +467,82 @@ function handleDelete(id?: number) {
       ElMessage.info("已取消删除");
     }
   );
+}
+
+/** 查看预警详细信息 */
+function handleViewDetail(id: number) {
+  detailDialog.visible = true;
+  detailDialog.loading = true;
+  // 清空之前的数据
+  Object.keys(detailData).forEach((key) => {
+    delete detailData[key as keyof WarningForm];
+  });
+  WarningAPI.getFormData(id)
+    .then((data) => {
+      Object.assign(detailData, data);
+    })
+    .catch(() => {
+      ElMessage.error("获取预警详细信息失败");
+    })
+    .finally(() => {
+      detailDialog.loading = false;
+    });
+}
+
+/** 格式化预警等级文本（用于模板） */
+function formatLevelText(level: number | undefined): string {
+  const levelMap: Record<number, string> = {
+    1: "一般",
+    2: "严重",
+    3: "紧急",
+  };
+  return levelMap[level as number] || "-";
+}
+
+/** 获取预警等级标签类型（颜色） */
+function getLevelTagType(level: number | undefined): string {
+  if (level === 1) {
+    return "success"; // 一般 - 绿色
+  } else if (level === 2) {
+    return "warning"; // 严重 - 黄色
+  } else if (level === 3) {
+    return "danger"; // 紧急 - 红色
+  }
+  return "info"; // 默认 - 灰色
+}
+
+/** 格式化是否已处理文本（用于模板） */
+function formatResolvedText(isResolved: number | undefined): string {
+  if (isResolved === 1) {
+    return "已处理";
+  } else if (isResolved === 0) {
+    return "未处理";
+  }
+  return "-";
+}
+
+/** 获取是否已处理标签类型（颜色） */
+function getResolvedTagType(isResolved: number | undefined): string {
+  if (isResolved === 1) {
+    return "success"; // 已处理 - 绿色
+  } else if (isResolved === 0) {
+    return "danger"; // 未处理 - 红色
+  }
+  return "info"; // 默认 - 灰色
+}
+
+/** 格式化日期时间 */
+function formatDateTime(date: Date | string | undefined): string {
+  if (!date) return "-";
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "-";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  const seconds = String(d.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 onMounted(() => {
