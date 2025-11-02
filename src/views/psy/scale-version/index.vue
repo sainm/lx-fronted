@@ -18,7 +18,36 @@
       @toolbar-click="handleToolbarClick"
       @operate-click="handleOperateClick"
       @filter-change="handleFilterChange"
-    ></page-content>
+    >
+      <template #operation="scope">
+        <div class="operation-wrap">
+          <el-button type="primary" link size="small" @click="onOperationClick('dimension', scope)">
+            维度查看
+          </el-button>
+          <el-button type="warning" link size="small" @click="onOperationClick('question', scope)">
+            题目设置
+          </el-button>
+          <el-dropdown
+            trigger="click"
+            popper-class="operation-dropdown"
+            @command="handleMoreCommand"
+          >
+            <el-button type="primary" link size="small" class="operation-more">>>></el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item :command="{ name: 'scoringRule', scope }">
+                  计分规则
+                </el-dropdown-item>
+                <el-dropdown-item :command="{ name: 'edit', scope }">编辑</el-dropdown-item>
+                <el-dropdown-item :command="{ name: 'delete', scope }">
+                  <span class="text-danger">删除</span>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+      </template>
+    </page-content>
 
     <!-- 新增 -->
     <page-modal
@@ -48,13 +77,14 @@
         <div class="flex items-center justify-between w-full">
           <span class="text-base font-medium">版本维度 - {{ currentVersionName }}</span>
           <el-button
-            :icon="isDimensionMaximized ? 'ScaleToOriginal' : 'FullScreen'"
             :title="isDimensionMaximized ? '恢复' : '最大化'"
             circle
             type="primary"
             text
             @click="toggleDimensionMaximize"
-          />
+          >
+            <div :class="`i-svg:${isDimensionMaximized ? 'fullscreen-exit' : 'fullscreen'}`" />
+          </el-button>
         </div>
       </template>
       <Dimension
@@ -78,19 +108,51 @@
         <div class="flex items-center justify-between w-full">
           <span class="text-base font-medium">计分规则 - {{ scoringRuleVersionName }}</span>
           <el-button
-            :icon="isScoringMaximized ? 'ScaleToOriginal' : 'FullScreen'"
             :title="isScoringMaximized ? '恢复' : '最大化'"
             circle
             type="primary"
             text
             @click="toggleScoringMaximize"
-          />
+          >
+            <div :class="`i-svg:${isScoringMaximized ? 'fullscreen-exit' : 'fullscreen'}`" />
+          </el-button>
         </div>
       </template>
       <ScoringRule
         v-if="scoringRuleDialogVisible"
         :version-id="scoringRuleVersionId"
         :scale-id="scoringRuleScaleId"
+      />
+    </el-dialog>
+
+    <!-- 题目设置弹窗 -->
+    <el-dialog
+      v-model="questionDialogVisible"
+      :width="isQuestionMaximized ? '100%' : '90%'"
+      :top="isQuestionMaximized ? '0' : '3vh'"
+      :fullscreen="isQuestionMaximized"
+      draggable
+      destroy-on-close
+      @closed="isQuestionMaximized = false"
+    >
+      <template #header>
+        <div class="flex items-center justify-between w-full">
+          <span class="text-base font-medium">题目设置 - {{ questionVersionName }}</span>
+          <el-button
+            :title="isQuestionMaximized ? '恢复' : '最大化'"
+            circle
+            type="primary"
+            text
+            @click="toggleQuestionMaximize"
+          >
+            <div :class="`i-svg:${isQuestionMaximized ? 'fullscreen-exit' : 'fullscreen'}`" />
+          </el-button>
+        </div>
+      </template>
+      <Question
+        v-if="questionDialogVisible"
+        :version-id="questionVersionId"
+        :scale-id="questionScaleId"
       />
     </el-dialog>
   </div>
@@ -108,6 +170,7 @@ import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/com
 import usePage from "@/components/CURD/usePage";
 import Dimension from "@/views/psy/dimension/index.vue";
 import ScoringRule from "@/views/psy/scoring-rule/index.vue";
+import Question from "@/views/psy/question/index.vue";
 
 // 类型定义
 type ScaleVersionFormExtend = ScaleVersionForm & {
@@ -201,6 +264,18 @@ const toggleScoringMaximize = () => {
   isScoringMaximized.value = !isScoringMaximized.value;
 };
 
+// 题目设置弹窗控制
+const questionDialogVisible = ref(false);
+const questionVersionId = ref<number | string | undefined>();
+const questionScaleId = ref<number | string | undefined>();
+const questionVersionName = ref("");
+const isQuestionMaximized = ref(false);
+
+// 切换题目设置弹窗最大化状态
+const toggleQuestionMaximize = () => {
+  isQuestionMaximized.value = !isQuestionMaximized.value;
+};
+
 // 列表配置
 const contentConfig: IContentConfig<ScaleVersionPageQueryExtend> = reactive({
   // 权限前缀
@@ -268,34 +343,9 @@ const contentConfig: IContentConfig<ScaleVersionPageQueryExtend> = reactive({
     {
       label: "操作",
       prop: "operation",
-      width: 340,
-      templet: "tool",
-      operat: [
-        {
-          name: "dimension",
-          text: "维度查看",
-          attrs: { icon: "menu", type: "primary", link: true, size: "small" },
-          perm: "*:*:*",
-        },
-        {
-          name: "scoringRule",
-          text: "计分规则",
-          attrs: { icon: "data-analysis", type: "success", link: true, size: "small" },
-          perm: "*:*:*",
-        },
-        {
-          name: "edit",
-          text: "编辑",
-          attrs: { icon: "edit", type: "primary", link: true, size: "small" },
-          perm: "*:*:*",
-        },
-        {
-          name: "delete",
-          text: "删除",
-          attrs: { icon: "delete", type: "danger", link: true, size: "small" },
-          perm: "*:*:*",
-        },
-      ],
+      width: 260,
+      templet: "custom",
+      slotName: "operation",
     },
   ],
 });
@@ -459,6 +509,20 @@ const handleOperateClick = (data: IObject) => {
       return;
     }
     scoringRuleDialogVisible.value = true;
+  } else if (data.name === "question") {
+    // 打开题目设置弹窗
+    questionVersionId.value = data.row.id;
+    questionScaleId.value = data.row.scaleId;
+    questionVersionName.value = data.row.versionName || "";
+    if (!questionVersionId.value) {
+      ElMessage.error("无法获取版本ID");
+      return;
+    }
+    if (!questionScaleId.value) {
+      ElMessage.error("无法获取量表ID");
+      return;
+    }
+    questionDialogVisible.value = true;
   }
 };
 
@@ -466,4 +530,45 @@ const handleOperateClick = (data: IObject) => {
 const handleToolbarClick = () => {
   // 工具栏按钮点击处理
 };
+
+const onOperationClick = (name: string, scope: any) => {
+  handleOperateClick({
+    name,
+    row: scope.row,
+    column: scope.column,
+    $index: scope.$index,
+  });
+};
+
+const handleMoreCommand = (command: { name: string; scope: any }) => {
+  if (!command || !command.scope) return;
+  onOperationClick(command.name, command.scope);
+};
 </script>
+
+<style scoped lang="scss">
+.operation-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.operation-more {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+:deep(.operation-dropdown) {
+  min-width: 120px;
+}
+
+:deep(.operation-dropdown .el-dropdown-menu__item) {
+  justify-content: flex-start;
+  font-size: 13px;
+}
+
+.text-danger {
+  color: var(--el-color-danger);
+}
+</style>

@@ -124,9 +124,9 @@ const contentConfig: IContentConfig<QuestionWeightPageQuery> = reactive({
   cols: [
     { type: "selection", width: 55, align: "center" },
     { type: "index", label: "序号", width: 60, align: "center" },
-    { label: "所属计分规则ID", prop: "ruleId", width: 150 },
-    { label: "题目ID", prop: "questionId", width: 100 },
-    { label: "题目权重", prop: "weight", width: 120, align: "center" },
+    { label: "所属计分规则ID", prop: "ruleId" },
+    { label: "题目ID", prop: "questionId" },
+    { label: "题目权重", prop: "weight", align: "center" },
     {
       label: "操作",
       prop: "operation",

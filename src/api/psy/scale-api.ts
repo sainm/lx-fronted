@@ -62,6 +62,27 @@ const ScaleAPI = {
       method: "delete",
     });
   },
+  /** 下载量表导入模板 */
+  downloadTemplate() {
+    return request({
+      url: `${SCALE_BASE_URL}/template`,
+      method: "get",
+      responseType: "blob",
+    });
+  },
+  /** 导入量表 */
+  import(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request<any, ExcelResult>({
+      url: `${SCALE_BASE_URL}/import`,
+      method: "post",
+      data: formData,
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
 };
 
 export default ScaleAPI;

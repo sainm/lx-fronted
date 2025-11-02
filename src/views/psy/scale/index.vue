@@ -48,13 +48,14 @@
         <div class="flex items-center justify-between w-full">
           <span class="text-base font-medium">量表版本 - {{ currentScaleName }}</span>
           <el-button
-            :icon="isMaximized ? 'ScaleToOriginal' : 'FullScreen'"
             :title="isMaximized ? '恢复' : '最大化'"
             circle
             type="primary"
             text
             @click="toggleMaximize"
-          />
+          >
+            <div :class="`i-svg:${isMaximized ? 'fullscreen-exit' : 'fullscreen'}`" />
+          </el-button>
         </div>
       </template>
       <ScaleVersion v-if="versionDialogVisible" :scale-id="currentScaleId" />
@@ -153,6 +154,10 @@ const contentConfig: IContentConfig<ScalePageQuery> = reactive({
   indexAction: ScaleAPI.getPage,
   // 删除接口
   deleteAction: ScaleAPI.deleteByIds,
+  // 导入模板
+  importTemplate: ScaleAPI.downloadTemplate,
+  // 导入接口
+  importAction: ScaleAPI.import,
   // 数据解析函数
   parseData(res: any) {
     return {
@@ -171,6 +176,7 @@ const contentConfig: IContentConfig<ScalePageQuery> = reactive({
   toolbar: [
     { name: "add", text: "新增", attrs: { icon: "plus", type: "success" }, perm: "*:*:*" },
     { name: "delete", text: "删除", attrs: { icon: "delete", type: "danger" }, perm: "*:*:*" },
+    { name: "import", text: "导入", attrs: { icon: "upload", type: "primary" }, perm: "*:*:*" },
   ],
   defaultToolbar: ["refresh", "filter"],
   // 表格列配置
