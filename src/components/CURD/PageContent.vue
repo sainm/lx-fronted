@@ -52,7 +52,11 @@
       @filter-change="handleFilterChange"
     >
       <template v-for="col in cols" :key="col.prop">
-        <el-table-column v-if="col.show" v-bind="col">
+        <el-table-column
+          v-if="col.show"
+          v-bind="col"
+          :index="col.type === 'index' ? indexMethod : undefined"
+        >
           <template #default="scope">
             <!-- 显示图片 -->
             <template v-if="col.templet === 'image'">
@@ -846,6 +850,11 @@ function handleFilterChange(newFilters: any) {
 // 获取筛选条件
 function getFilterParams() {
   return filterParams;
+}
+
+// 序号计算方法（考虑分页）
+function indexMethod(index: number) {
+  return (pagination.currentPage - 1) * pagination.pageSize + index + 1;
 }
 
 // 获取分页数据

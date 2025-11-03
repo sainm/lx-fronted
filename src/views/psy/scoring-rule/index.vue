@@ -40,6 +40,8 @@
 defineOptions({ name: "ScoringRule" });
 
 import ScoringRuleAPI, { ScoringRuleForm, ScoringRulePageQuery } from "@/api/psy/scoring-rule-api";
+import ScaleAPI from "@/api/psy/scale-api";
+import ScaleVersionAPI from "@/api/psy/scale-version-api";
 import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/components/CURD/types";
 import usePage from "@/components/CURD/usePage";
 
@@ -71,10 +73,91 @@ type ScoringRulePageQueryExtend = ScoringRulePageQuery & {
   scaleId?: number | string;
 };
 
+// 量表选项列表
+const scaleOptions = ref<{ label: string; value: any }[]>([]);
+// 版本选项列表
+const versionOptions = ref<{ label: string; value: any }[]>([]);
+
+// 加载量表选项
+const loadScaleOptions = async () => {
+  try {
+    const res = await ScaleAPI.getPage({ pageNum: 1, pageSize: 1000 });
+    scaleOptions.value = res.list.map((item: any) => ({
+      label: item.name,
+      value: item.id,
+    }));
+  } catch (error) {
+    console.error("加载量表选项失败:", error);
+  }
+};
+
+// 加载版本选项
+const loadVersionOptions = async (scaleId: number | string) => {
+  if (!scaleId) {
+    versionOptions.value = [];
+    return;
+  }
+  try {
+    const res = await ScaleVersionAPI.getPage({
+      pageNum: 1,
+      pageSize: 1000,
+      scaleId: Number(scaleId),
+    } as any);
+    versionOptions.value = res.list.map((item: any) => ({
+      label: item.versionName,
+      value: item.id,
+    }));
+  } catch (error) {
+    console.error("加载版本选项失败:", error);
+  }
+};
+
+// 组件挂载时加载量表选项
+onMounted(() => {
+  loadScaleOptions();
+  // 如果有 scaleId，则加载版本选项
+  if (props.scaleId) {
+    loadVersionOptions(props.scaleId);
+  }
+});
+
 // 搜索配置
 const searchConfig: ISearchConfig = reactive({
   permPrefix: "*:*:*",
-  formItems: [],
+  formItems: computed(
+    () =>
+      [
+        {
+          type: "select" as const,
+          label: "所属量表",
+          prop: "scaleId",
+          attrs: {
+            placeholder: "请选择量表",
+            clearable: true,
+            style: { width: "200px" },
+            onChange: async (val: any) => {
+              if (val) {
+                await loadVersionOptions(val);
+              } else {
+                versionOptions.value = [];
+              }
+            },
+          },
+          options: scaleOptions,
+        },
+        {
+          type: "select" as const,
+          label: "所属版本",
+          prop: "versionId",
+          attrs: {
+            placeholder: "请选择版本",
+            clearable: true,
+            style: { width: "200px" },
+          },
+          options: versionOptions,
+        },
+      ] as any
+  ),
 });
 
 // 列表配置
@@ -89,11 +172,21 @@ const contentConfig: IContentConfig<ScoringRulePageQueryExtend> = reactive({
   pk: "id",
   // 列表查询接口
   indexAction: (params?: ScoringRulePageQueryExtend) => {
-    return ScoringRuleAPI.getPage({
+    // 优先使用搜索表单中的 scaleId 和 versionId，如果没有则使用 props 传入的值
+    const finalParams = {
       ...params,
-      versionId: props.versionId ? Number(props.versionId) : undefined,
-      scaleId: props.scaleId ? Number(props.scaleId) : undefined,
-    } as any);
+      versionId: params?.versionId
+        ? Number(params.versionId)
+        : props.versionId
+          ? Number(props.versionId)
+          : undefined,
+      scaleId: params?.scaleId
+        ? Number(params.scaleId)
+        : props.scaleId
+          ? Number(props.scaleId)
+          : undefined,
+    };
+    return ScoringRuleAPI.getPage(finalParams as any);
   },
   // 删除接口
   deleteAction: ScoringRuleAPI.deleteByIds,

@@ -51,7 +51,7 @@
         border
         @selection-change="handleSelectionChange"
       >
-        <el-table-column type="index" label="序号" width="60" />
+        <el-table-column type="index" label="序号" width="60" :index="indexMethod" />
         <el-table-column key="configName" label="配置名称" prop="configName" min-width="100" />
         <el-table-column key="configKey" label="配置键" prop="configKey" min-width="100" />
         <el-table-column key="configValue" label="配置值" prop="configValue" min-width="100" />
@@ -197,6 +197,11 @@ function fetchData() {
 function handleQuery() {
   queryParams.pageNum = 1;
   fetchData();
+}
+
+// 序号计算方法（考虑分页）
+function indexMethod(index: number) {
+  return (queryParams.pageNum - 1) * queryParams.pageSize + index + 1;
 }
 
 // 重置查询

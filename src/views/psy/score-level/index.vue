@@ -39,7 +39,7 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column type="index" label="序号" width="60" align="center" />
+        <el-table-column type="index" label="序号" width="60" align="center" :index="indexMethod" />
         <el-table-column key="id" label="" prop="id" min-width="150" align="center" />
         <el-table-column
           key="ruleId"
@@ -234,6 +234,11 @@ function handleQuery() {
     .finally(() => {
       loading.value = false;
     });
+}
+
+/** 序号计算方法（考虑分页） */
+function indexMethod(index: number) {
+  return (queryParams.pageNum - 1) * queryParams.pageSize + index + 1;
 }
 
 /** 重置分数区间对应等级描述查询 */

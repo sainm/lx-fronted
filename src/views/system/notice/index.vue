@@ -64,7 +64,7 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column type="index" label="序号" width="60" />
+        <el-table-column type="index" label="序号" width="60" :index="indexMethod" />
         <el-table-column label="通知标题" prop="title" min-width="200" />
         <el-table-column align="center" label="通知类型" width="150">
           <template #default="scope">
@@ -333,6 +333,11 @@ function handleQuery() {
     .finally(() => {
       loading.value = false;
     });
+}
+
+// 序号计算方法（考虑分页）
+function indexMethod(index: number) {
+  return (queryParams.pageNum - 1) * queryParams.pageSize + index + 1;
 }
 
 // 重置查询
