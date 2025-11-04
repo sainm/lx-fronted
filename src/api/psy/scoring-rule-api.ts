@@ -81,6 +81,9 @@ export interface ScoringRuleForm {
 export interface ScoringRulePageVO {
   /** 计分说明 */
   description?: string;
+  scaleName?: string;
+  versionName?: string;
+  dimensionName?: string;
   /** 创建人ID */
   createBy?: number;
 }

@@ -338,8 +338,8 @@ const contentConfig: IContentConfig<ScaleVersionPageQueryExtend> = reactive({
         1: "启用",
       },
     },
-    { label: "创建时间", prop: "createTime", width: 160, templet: "date" },
-    { label: "更新时间", prop: "updateTime", width: 160, templet: "date" },
+    // { label: "创建时间", prop: "createTime", width: 160, templet: "date" },
+    // { label: "更新时间", prop: "updateTime", width: 160, templet: "date" },
     {
       label: "操作",
       prop: "operation",
