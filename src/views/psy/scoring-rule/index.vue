@@ -214,9 +214,11 @@ const contentConfig: IContentConfig<ScoringRulePageQueryExtend> = reactive({
   cols: [
     { type: "selection", width: 55, align: "center" },
     { type: "index", label: "序号", width: 60, align: "center" },
-    { label: "所属量表名称", prop: "scaleName", width: 150, showOverflowTooltip: true },
-    { label: "所属版本名称", prop: "versionName", width: 150, showOverflowTooltip: true },
-    { label: "维度名称", prop: "dimensionName", width: 150, showOverflowTooltip: true },
+    // { label: "所属量表名称", prop: "scaleName", width: 150, showOverflowTooltip: true },
+    // { label: "所属版本名称", prop: "versionName", width: 150, showOverflowTooltip: true },
+    // { label: "维度名称", prop: "dimensionName", width: 150, showOverflowTooltip: true },
+    { label: "规则名称", prop: "ruleName", width: 150, showOverflowTooltip: true },
+    { label: "规则类型代码", prop: "ruleCode", width: 150, showOverflowTooltip: true },
     { label: "计分说明", prop: "description", showOverflowTooltip: true },
     // { label: "创建时间", prop: "createTime", width: 160, templet: "date" },
     {
@@ -266,6 +268,22 @@ const addModalConfig: IModalConfig<ScoringRuleFormExtend> = reactive({
   },
   // 表单项配置
   formItems: [
+    {
+      type: "input",
+      attrs: {
+        placeholder: "请输入规则名称",
+      },
+      label: "规则名称",
+      prop: "ruleName",
+    },
+    {
+      type: "input",
+      attrs: {
+        placeholder: "请输入规则代码",
+      },
+      label: "规则代码",
+      prop: "ruleCode",
+    },
     {
       type: "input",
       attrs: {

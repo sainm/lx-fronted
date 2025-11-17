@@ -77,6 +77,8 @@ export interface OptionForm {
   id?: number;
   /** 所属题目ID */
   questionId?: number;
+  /** 选项键 */
+  optionKey?: string;
   /** 选项内容 */
   optionText?: string;
   /** 选项分值 */
@@ -100,6 +102,7 @@ export interface OptionPageVO {
   id?: number;
   /** 所属题目ID */
   questionId?: number;
+  optionKey?: string;
   /** 选项内容 */
   optionText?: string;
   /** 选项分值 */

@@ -129,6 +129,7 @@ const contentConfig: IContentConfig<OptionPageQueryExtend> = reactive({
   cols: [
     { type: "selection", width: 55, align: "center" },
     { type: "index", label: "序号", width: 60, align: "center" },
+    { label: "选项键", prop: "optionKey", width: 100 },
     { label: "选项内容", prop: "optionText", showOverflowTooltip: true },
     { label: "选项分值", prop: "optionValue", width: 100 },
     { label: "自定义分数", prop: "score", width: 120 },
@@ -189,6 +190,16 @@ const addModalConfig: IModalConfig<OptionFormExtend> = reactive({
       rules: [{ required: true, message: "选项内容不能为空", trigger: "blur" }],
       label: "选项内容",
       prop: "optionText",
+    },
+    {
+      type: "input",
+      attrs: {
+        placeholder: "请输入选项键",
+        type: "text",
+      },
+      rules: [{ required: true, message: "选项键不能为空", trigger: "blur" }],
+      label: "选项键",
+      prop: "optionKey",
     },
     {
       type: "input",

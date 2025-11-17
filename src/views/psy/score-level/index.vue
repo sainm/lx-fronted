@@ -40,7 +40,7 @@
       >
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column type="index" label="序号" width="60" align="center" :index="indexMethod" />
-        <el-table-column key="id" label="" prop="id" min-width="150" align="center" />
+        <!-- <el-table-column key="id" label="" prop="id" min-width="150" align="center" /> -->
         <el-table-column
           key="ruleId"
           label="所属计分规则ID"

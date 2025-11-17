@@ -42,6 +42,7 @@ defineOptions({ name: "Dimension" });
 import DimensionAPI, { DimensionForm, DimensionPageQuery } from "@/api/psy/dimension-api";
 import ScaleAPI from "@/api/psy/scale-api";
 import ScaleVersionAPI from "@/api/psy/scale-version-api";
+import ScoringRuleAPI from "@/api/psy/scoring-rule-api";
 import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/components/CURD/types";
 import usePage from "@/components/CURD/usePage";
 
@@ -82,6 +83,8 @@ const props = defineProps<{
 const scaleOptions = ref<{ label: string; value: any }[]>([]);
 // 版本选项列表
 const versionOptions = ref<{ label: string; value: any }[]>([]);
+// 计分规则选项列表
+const scoringRuleOptions = ref<{ label: string; value: any }[]>([]);
 
 // 加载量表选项
 const loadScaleOptions = async () => {
@@ -117,9 +120,23 @@ const loadVersionOptions = async (scaleId: number | string) => {
   }
 };
 
+// 加载计分规则选项
+const loadScoringRuleOptions = async () => {
+  try {
+    const res = await ScoringRuleAPI.getPage({ pageNum: 1, pageSize: 1000 });
+    scoringRuleOptions.value = res.list.map((item: any) => ({
+      label: item.ruleCode,
+      value: item.id,
+    }));
+  } catch (error) {
+    console.error("加载计分规则选项失败:", error);
+  }
+};
+
 // 组件挂载时加载量表选项
 onMounted(() => {
   loadScaleOptions();
+  loadScoringRuleOptions();
   // 如果有 scaleId，则加载版本选项
   if (props.scaleId) {
     loadVersionOptions(props.scaleId);
@@ -192,7 +209,7 @@ const contentConfig: IContentConfig<DimensionPageQueryExtend> = reactive({
     { label: "所属版本", prop: "versionName", width: 120 },
     { label: "维度名称", prop: "name", width: 150, showOverflowTooltip: true },
     { label: "维度说明", prop: "description", showOverflowTooltip: true },
-    { label: "计分规则", prop: "scoreRule", showOverflowTooltip: true },
+    { label: "计分规则", prop: "ruleCode", showOverflowTooltip: true },
     {
       label: "操作",
       prop: "operation",
@@ -295,12 +312,15 @@ const addModalConfig: IModalConfig<DimensionFormExtend> = reactive({
         prop: "description",
       },
       {
-        type: "input",
+        type: "select",
         attrs: {
-          placeholder: "计分规则，如sum/average",
+          placeholder: "请选择计分规则",
+          clearable: true,
+          style: { width: "100%" },
         },
         label: "计分规则",
-        prop: "scoreRule",
+        prop: "scoreRuleId",
+        options: scoringRuleOptions,
       },
     ];
   }),

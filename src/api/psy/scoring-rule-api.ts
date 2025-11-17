@@ -71,6 +71,10 @@ export interface ScoringRulePageQuery extends PageQuery {}
 
 /** 计分规则主（维度）表单对象 */
 export interface ScoringRuleForm {
+  /** 规则名称 */
+  rule_name?: string;
+  /** 规则类型代码 */
+  rule_code?: string;
   /** 计分说明 */
   description?: string;
   /** 创建人ID */
@@ -79,11 +83,14 @@ export interface ScoringRuleForm {
 
 /** 计分规则主（维度）分页对象 */
 export interface ScoringRulePageVO {
+  /** ID */
+  id?: number;
+  /** 规则名称 */
+  ruleName?: string;
+  /** 规则类型代码 */
+  ruleCode?: string;
   /** 计分说明 */
   description?: string;
-  scaleName?: string;
-  versionName?: string;
-  dimensionName?: string;
   /** 创建人ID */
   createBy?: number;
 }

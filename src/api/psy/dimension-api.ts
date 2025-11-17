@@ -88,7 +88,7 @@ export interface DimensionForm {
   name?: string;
   description?: string;
   /** 计分规则，如sum/average */
-  scoreRule?: string;
+  scoreRuleId?: string;
 }
 
 /** 维度分页对象 */
@@ -106,6 +106,6 @@ export interface DimensionPageVO {
   name?: string;
   /** 维度描述 */
   description?: string;
-  /** 计分规则，如sum/average */
-  scoreRule?: string;
+  /** 计分规则代码 */
+  ruleCode?: string;
 }

@@ -171,6 +171,7 @@ import usePage from "@/components/CURD/usePage";
 import Dimension from "@/views/psy/dimension/index.vue";
 import ScoringRule from "@/views/psy/scoring-rule/index.vue";
 import Question from "@/views/psy/question/index.vue";
+import { ElMessage, ElMessageBox } from "element-plus";
 
 // 类型定义
 type ScaleVersionFormExtend = ScaleVersionForm & {
@@ -481,6 +482,26 @@ const handleOperateClick = (data: IObject) => {
     handleEditClick(data.row, async () => {
       return await ScaleVersionAPI.getFormData(data.row.id);
     });
+  } else if (data.name === "delete") {
+    // 删除操作
+    ElMessageBox.confirm("确认删除该版本?", "警告", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "warning",
+    })
+      .then(() => {
+        if (data.row?.id) {
+          ScaleVersionAPI.deleteByIds(String(data.row.id))
+            .then(() => {
+              ElMessage.success("删除成功");
+              // 刷新列表
+              const queryParams = searchRef.value?.getQueryParams();
+              contentRef.value?.fetchPageData(queryParams, true);
+            })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
   } else if (data.name === "dimension") {
     // 打开维度弹窗
     currentVersionId.value = data.row.id;
