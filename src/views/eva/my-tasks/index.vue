@@ -396,6 +396,7 @@ const currentTask = ref<MyTaskVO | null>(null);
 
 // 答题弹窗相关
 const assessmentDialogVisible = ref(false);
+const assessmentSubmitted = ref(false);
 const assessmentParams = reactive({
   assignmentId: undefined as number | undefined,
   planId: undefined as number | undefined,
@@ -497,6 +498,7 @@ const handleStartTask = (row: MyTaskVO) => {
   })
     .then(() => {
       // 设置答题参数
+      assessmentSubmitted.value = false;
       assessmentParams.assignmentId = row.id;
       assessmentParams.planId = row.planId;
       assessmentParams.versionId = row.versionId;
@@ -527,6 +529,12 @@ const clearAssessmentParams = () => {
 
 // 弹窗关闭前确认（点击右上角X按钮时触发）
 const handleBeforeCloseAssessment = (done: () => void) => {
+  if (assessmentSubmitted.value) {
+    clearAssessmentParams();
+    done();
+    assessmentSubmitted.value = false;
+    return;
+  }
   ElMessageBox.confirm("答题尚未提交，确定要退出吗？", "提示", {
     confirmButtonText: "确定退出",
     cancelButtonText: "继续答题",
@@ -543,6 +551,12 @@ const handleBeforeCloseAssessment = (done: () => void) => {
 
 // 答题弹窗关闭（由子组件的"退出答题"按钮触发）
 const handleAssessmentClose = () => {
+  if (assessmentSubmitted.value) {
+    clearAssessmentParams();
+    assessmentDialogVisible.value = false;
+    assessmentSubmitted.value = false;
+    return;
+  }
   ElMessageBox.confirm("答题尚未提交，确定要退出吗？", "提示", {
     confirmButtonText: "确定退出",
     cancelButtonText: "继续答题",
@@ -559,6 +573,7 @@ const handleAssessmentClose = () => {
 
 // 答题成功（提交成功后，不需要确认直接关闭）
 const handleAssessmentSuccess = () => {
+  assessmentSubmitted.value = true;
   clearAssessmentParams();
   assessmentDialogVisible.value = false;
   // 刷新任务列表

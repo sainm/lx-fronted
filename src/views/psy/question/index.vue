@@ -433,17 +433,17 @@ const addModalConfig: IModalConfig<QuestionFormExtend> = reactive({
       },
       {
         type: "custom",
-        label: "题目类型: single/multiple/likert",
+        label: "题目类型:",
         prop: "questionType",
         slotName: "questionType",
         attrs: {
-          placeholder: "题目类型: single/multiple/likert",
+          placeholder: "题目类型: ",
           style: { width: "100%" },
         },
         rules: [
           {
             required: true,
-            message: "题目类型: single/multiple/likert不能为空",
+            message: "题目类型:",
             trigger: "change",
           },
         ],
@@ -506,15 +506,15 @@ const editModalConfig: IModalConfig<QuestionFormExtend> = reactive({
     const versionId = data.versionId || props.versionId;
     const scaleId = data.scaleId || props.scaleId;
 
-    // 确保 versionId 和 scaleId 存在
-    if (!scaleId) {
-      ElMessage.error("请选择所属量表");
-      return Promise.reject(new Error("所属量表ID不能为空"));
-    }
-    if (!versionId) {
-      ElMessage.error("请选择所属版本");
-      return Promise.reject(new Error("版本ID不能为空"));
-    }
+    // // 确保 versionId 和 scaleId 存在
+    // if (!scaleId) {
+    //   ElMessage.error("请选择所属量表");
+    //   return Promise.reject(new Error("所属量表ID不能为空"));
+    // }
+    // if (!versionId) {
+    //   ElMessage.error("请选择所属版本");
+    //   return Promise.reject(new Error("版本ID不能为空"));
+    // }
 
     const formData = {
       ...data,
@@ -528,12 +528,18 @@ const editModalConfig: IModalConfig<QuestionFormExtend> = reactive({
 });
 
 // 处理操作按钮点击
-const handleOperateClick = (data: IObject) => {
+const handleOperateClick = async (data: IObject) => {
   if (data.name === "option") {
     // 打开选项管理对话框
     currentQuestion.value = data.row;
     optionDialogVisible.value = true;
   } else if (data.name === "edit") {
+    if (data.row?.scaleId) {
+      await loadVersionOptions(data.row.scaleId);
+    }
+    if (data.row?.versionId) {
+      await loadDimensionOptions(data.row.versionId, data.row.scaleId);
+    }
     handleEditClick(data.row, async () => {
       return await QuestionAPI.getFormData(data.row.id);
     });

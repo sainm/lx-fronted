@@ -394,8 +394,12 @@ const editModalConfig: IModalConfig<DimensionFormExtend> = reactive({
 });
 
 // 处理操作按钮点击
-const handleOperateClick = (data: IObject) => {
+const handleOperateClick = async (data: IObject) => {
   if (data.name === "edit") {
+    // 编辑前根据当前行的量表ID加载版本选项，确保“所属版本”下拉展示版本名称
+    if (data.row?.scaleId) {
+      await loadVersionOptions(data.row.scaleId);
+    }
     handleEditClick(data.row, async () => {
       return await DimensionAPI.getFormData(data.row.id);
     });
